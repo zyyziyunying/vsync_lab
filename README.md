@@ -68,6 +68,7 @@ Artifacts are stored in `artifacts/`.
 
 ## Experiment docs
 
+- `docs/README.md`: project scope, phased goals, and Perfetto workflow
 - `docs/device_matrix.md`: device inventory and environment baseline
 - `docs/experiment_log_template.md`: per-run evidence template
 
