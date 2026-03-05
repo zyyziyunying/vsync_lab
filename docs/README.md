@@ -124,7 +124,7 @@ EOF
 
 ---
 
-## 10. 当前落地状态（2026-03-04）
+## 10. 当前落地状态（2026-03-05）
 
 - 已在工作区根目录落地 `vsync_lab/`（Android only，最小可运行实验工程）。
 - `vsync_lab` 已初始化为独立 Git 仓库（后续可补远端并纳入 submodule 流程）。
@@ -137,3 +137,16 @@ EOF
   - `scripts/collect_perfetto.ps1`
   - `docs/experiment_log_template.md`
   - `docs/device_matrix.md`
+- Phase 1 可观测性能力已落地：
+  - 新增统一日志导出（`schemaVersion: 1`，`logType: vsync_lab.frame_observability`）
+  - 支持记录每帧关键字段：`frameEndUs`、`expectedIntervalUs`、`actualIntervalUs`、`intervalDeltaUs`、`intervalDeltaRatio`、`isVsyncMiss`
+  - 面板新增 `Copy frame log` 按钮，导出内容包含 `scenario`、`scenarioSettings`、`snapshot`、`records`
+  - 默认环形缓冲区容量为 1200 帧，便于 10~20 秒窗口对比
+
+---
+
+## 11. Phase 1 使用建议（最小流程）
+
+1. 进入 `Animation stress` 或 `Scroll stress`，运行 15~30 秒并完成预热。
+2. 点击 `Copy frame log`，将 JSON 粘贴到 `docs/experiment_log_template.md` 的 “In-app unified frame log JSON”。
+3. 继续采集 `gfxinfo` 与 Perfetto，按同一轮实验归档到 `artifacts/`。

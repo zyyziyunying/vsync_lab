@@ -53,6 +53,15 @@ class _AnimationStressPageState extends State<AnimationStressPage> {
             _monitor.start();
           },
           onReset: _monitor.reset,
+          observabilityRecordCount: _monitor.observabilityRecordCount,
+          onCopyObservabilityLog: () => _monitor.buildObservabilityLog(
+            scenario: 'animation',
+            scenarioSettings: <String, dynamic>{
+              'particleCount': _particleCount.round(),
+              'workloadLevel': _workloadLevel.round(),
+              'colorShift': _colorShift,
+            },
+          ),
         );
 
         final controls = _ControlsCard(

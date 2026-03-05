@@ -12,6 +12,8 @@ class FrameMetricsPanel extends StatelessWidget {
     required this.isRunning,
     required this.onToggle,
     required this.onReset,
+    this.onCopyObservabilityLog,
+    this.observabilityRecordCount = 0,
     super.key,
   });
 
@@ -19,6 +21,8 @@ class FrameMetricsPanel extends StatelessWidget {
   final bool isRunning;
   final VoidCallback onToggle;
   final VoidCallback onReset;
+  final Map<String, dynamic> Function()? onCopyObservabilityLog;
+  final int observabilityRecordCount;
 
   @override
   Widget build(BuildContext context) {
@@ -96,6 +100,12 @@ class FrameMetricsPanel extends StatelessWidget {
                 icon: const Icon(Icons.copy),
                 label: const Text('Copy JSON'),
               ),
+              if (onCopyObservabilityLog != null)
+                OutlinedButton.icon(
+                  onPressed: () => _copyObservabilityLog(context),
+                  icon: const Icon(Icons.timeline),
+                  label: Text('Copy frame log ($observabilityRecordCount)'),
+                ),
             ],
           ),
         ],
@@ -111,6 +121,26 @@ class FrameMetricsPanel extends StatelessWidget {
     }
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Frame metrics copied to clipboard.')),
+    );
+  }
+
+  Future<void> _copyObservabilityLog(BuildContext context) async {
+    final builder = onCopyObservabilityLog;
+    if (builder == null) {
+      return;
+    }
+
+    final text = const JsonEncoder.withIndent('  ').convert(builder());
+    await Clipboard.setData(ClipboardData(text: text));
+    if (!context.mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Phase 1 frame observability log copied ($observabilityRecordCount records).',
+        ),
+      ),
     );
   }
 

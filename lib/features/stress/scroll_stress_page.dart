@@ -65,6 +65,15 @@ class _ScrollStressPageState extends State<ScrollStressPage> {
             _monitor.start();
           },
           onReset: _monitor.reset,
+          observabilityRecordCount: _monitor.observabilityRecordCount,
+          onCopyObservabilityLog: () => _monitor.buildObservabilityLog(
+            scenario: 'scroll',
+            scenarioSettings: <String, dynamic>{
+              'itemCount': _itemCount.round(),
+              'autoScroll': _autoScroll,
+              'enableBlur': _enableBlur,
+            },
+          ),
         );
 
         final controls = _ControlsCard(

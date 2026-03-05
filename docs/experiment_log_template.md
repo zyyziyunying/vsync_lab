@@ -34,6 +34,7 @@ Paste copied JSON here:
 
 - `collect_gfxinfo.ps1` output path:
 - `collect_perfetto.ps1` output path:
+- In-app unified frame log JSON (Copy frame log):
 - Additional logs:
 
 ## Timeline Observations

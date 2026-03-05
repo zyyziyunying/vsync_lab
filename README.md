@@ -50,7 +50,10 @@ Both scenarios display live metrics from `FrameTiming` callbacks:
 - VSync miss count / max consecutive miss streak
 - UI and Raster average time
 
-You can copy the current metrics as JSON from the panel.
+Panel export actions:
+
+- `Copy JSON`: snapshot metrics for the current rolling window
+- `Copy frame log`: Phase 1 unified log (per-frame timestamp, expected interval, actual interval delta, and miss flags)
 
 ## Data collection scripts
 
