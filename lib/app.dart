@@ -7,7 +7,7 @@ class VsyncLabApp extends StatelessWidget {
   const VsyncLabApp({super.key});
 
   static final GoRouter _router = RouterFactory.create(
-    RouterConfig(
+    RouterConfiger(
       initialLocation: AppRoutePath.home,
       routes: buildAppRoutes(),
     ),
