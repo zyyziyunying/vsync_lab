@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:common/common.dart';
 import 'package:flutter/material.dart';
 
+import '../../metrics/frame_log_file_exporter.dart';
 import '../../metrics/frame_timing_monitor.dart';
 import '../../routes/app_routes.dart';
 import '../../widgets/frame_metrics_panel.dart';
@@ -20,6 +21,7 @@ class _ScrollStressPageState extends State<ScrollStressPage> {
   final _scrollController = ScrollController();
   final _refreshController = TextEditingController(text: '60');
   final _refreshRateParser = const RefreshRateParser();
+  final _frameLogExporter = const FrameLogFileExporter();
 
   late final FrameTimingMonitor _monitor;
   Timer? _autoScrollTimer;
@@ -66,14 +68,7 @@ class _ScrollStressPageState extends State<ScrollStressPage> {
           },
           onReset: _monitor.reset,
           observabilityRecordCount: _monitor.observabilityRecordCount,
-          onCopyObservabilityLog: () => _monitor.buildObservabilityLog(
-            scenario: 'scroll',
-            scenarioSettings: <String, dynamic>{
-              'itemCount': _itemCount.round(),
-              'autoScroll': _autoScroll,
-              'enableBlur': _enableBlur,
-            },
-          ),
+          onSaveObservabilityLog: _saveFrameLog,
         );
 
         final controls = _ControlsCard(
@@ -206,6 +201,19 @@ class _ScrollStressPageState extends State<ScrollStressPage> {
     _monitor.applyTargetRefreshRate(parsed.data!);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Target refresh rate set to ${parsed.data} Hz')),
+    );
+  }
+
+  Future<FrameLogSaveResult> _saveFrameLog() {
+    return _frameLogExporter.save(
+      _monitor.buildObservabilityLog(
+        scenario: 'scroll',
+        scenarioSettings: <String, dynamic>{
+          'itemCount': _itemCount.round(),
+          'autoScroll': _autoScroll,
+          'enableBlur': _enableBlur,
+        },
+      ),
     );
   }
 }

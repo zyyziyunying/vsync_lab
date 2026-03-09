@@ -1,9 +1,7 @@
-import 'dart:convert';
-
 import 'package:common/common.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
+import '../metrics/frame_log_file_exporter.dart';
 import '../metrics/frame_metrics_snapshot.dart';
 
 class FrameMetricsPanel extends StatelessWidget {
@@ -12,7 +10,7 @@ class FrameMetricsPanel extends StatelessWidget {
     required this.isRunning,
     required this.onToggle,
     required this.onReset,
-    this.onCopyObservabilityLog,
+    this.onSaveObservabilityLog,
     this.observabilityRecordCount = 0,
     super.key,
   });
@@ -21,7 +19,7 @@ class FrameMetricsPanel extends StatelessWidget {
   final bool isRunning;
   final VoidCallback onToggle;
   final VoidCallback onReset;
-  final Map<String, dynamic> Function()? onCopyObservabilityLog;
+  final Future<FrameLogSaveResult> Function()? onSaveObservabilityLog;
   final int observabilityRecordCount;
 
   @override
@@ -96,16 +94,12 @@ class FrameMetricsPanel extends StatelessWidget {
                 label: const Text('Reset metrics'),
               ),
               OutlinedButton.icon(
-                onPressed: () => _copySnapshot(context),
-                icon: const Icon(Icons.copy),
-                label: const Text('Copy JSON'),
+                onPressed: onSaveObservabilityLog == null
+                    ? null
+                    : () => _saveObservabilityLog(context),
+                icon: const Icon(Icons.save_alt),
+                label: Text('Save frame log ($observabilityRecordCount)'),
               ),
-              if (onCopyObservabilityLog != null)
-                OutlinedButton.icon(
-                  onPressed: () => _copyObservabilityLog(context),
-                  icon: const Icon(Icons.timeline),
-                  label: Text('Copy frame log ($observabilityRecordCount)'),
-                ),
             ],
           ),
         ],
@@ -113,35 +107,56 @@ class FrameMetricsPanel extends StatelessWidget {
     );
   }
 
-  Future<void> _copySnapshot(BuildContext context) async {
-    final text = const JsonEncoder.withIndent('  ').convert(snapshot.toJson());
-    await Clipboard.setData(ClipboardData(text: text));
-    if (!context.mounted) {
-      return;
-    }
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Frame metrics copied to clipboard.')),
-    );
-  }
-
-  Future<void> _copyObservabilityLog(BuildContext context) async {
-    final builder = onCopyObservabilityLog;
-    if (builder == null) {
+  Future<void> _saveObservabilityLog(BuildContext context) async {
+    final saver = onSaveObservabilityLog;
+    if (saver == null) {
       return;
     }
 
-    final text = const JsonEncoder.withIndent('  ').convert(builder());
-    await Clipboard.setData(ClipboardData(text: text));
-    if (!context.mounted) {
-      return;
+    try {
+      final result = await saver();
+      if (!context.mounted) {
+        return;
+      }
+
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) {
+          return AlertDialog(
+            title: const Text('Frame log saved'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Latest file: ${result.latestRelativePath}'),
+                  const SizedBox(height: 8),
+                  Text('Archive file: ${result.archivedRelativePath}'),
+                  const SizedBox(height: 16),
+                  const Text('Pull the latest file to your computer with:'),
+                  const SizedBox(height: 8),
+                  SelectableText(result.buildAdbPullCommand()),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Close'),
+              ),
+            ],
+          );
+        },
+      );
+    } catch (error) {
+      if (!context.mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to save frame log: $error')),
+      );
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Phase 1 frame observability log copied ($observabilityRecordCount records).',
-        ),
-      ),
-    );
   }
 
   static String _format(double value) {

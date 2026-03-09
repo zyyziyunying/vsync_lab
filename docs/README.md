@@ -140,7 +140,7 @@ EOF
 - Phase 1 可观测性能力已落地：
   - 新增统一日志导出（`schemaVersion: 1`，`logType: vsync_lab.frame_observability`）
   - 支持记录每帧关键字段：`frameEndUs`、`expectedIntervalUs`、`actualIntervalUs`、`intervalDeltaUs`、`intervalDeltaRatio`、`isVsyncMiss`
-  - 面板新增 `Copy frame log` 按钮，导出内容包含 `scenario`、`scenarioSettings`、`snapshot`、`records`
+  - 面板新增 `Save frame log` 按钮，保存内容包含 `scenario`、`scenarioSettings`、`snapshot`、`records`
   - 默认环形缓冲区容量为 1200 帧，便于 10~20 秒窗口对比
 
 ---
@@ -148,5 +148,5 @@ EOF
 ## 11. Phase 1 使用建议（最小流程）
 
 1. 进入 `Animation stress` 或 `Scroll stress`，运行 15~30 秒并完成预热。
-2. 点击 `Copy frame log`，将 JSON 粘贴到 `docs/experiment_log_template.md` 的 “In-app unified frame log JSON”。
+2. 点击 `Save frame log`，然后在电脑上执行 `adb exec-out run-as com.harrypet.vsync_lab cat cache/frame_log_<scenario>_latest.json > artifacts/frame_log_<scenario>_latest.json` 拉取 JSON。
 3. 继续采集 `gfxinfo` 与 Perfetto，按同一轮实验归档到 `artifacts/`。
