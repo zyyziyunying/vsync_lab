@@ -32,7 +32,7 @@
 - [x] 检查 `lib/features/` 与 `lib/widgets/` 中所有 toolkit 相关 import
 - [x] 将主应用中对 `lib/metrics/*.dart` 的引用逐步替换为 `package:vsync_lab_toolkit/vsync_lab_toolkit.dart`
 - [x] 评估是否保留 `lib/metrics/*.dart` 作为短期兼容层
-- [ ] 若不再需要兼容层，删除 `lib/metrics/*.dart` re-export 文件
+- [x] 若不再需要兼容层，删除 `lib/metrics/*.dart` re-export 文件
 
 验收标准：
 
