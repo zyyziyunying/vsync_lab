@@ -1,5 +1,4 @@
 import 'dart:collection';
-import 'dart:ui';
 
 import 'argument_validation.dart';
 import 'frame_metrics_snapshot.dart';
@@ -30,15 +29,6 @@ class FrameObservabilityLog {
     _records.clear();
     _nextFrameIndex = 1;
     _lastFrameEndUs = null;
-  }
-
-  void addTiming(FrameTiming timing) {
-    addSample(
-      frameEndUs: timing.timestampInMicroseconds(FramePhase.rasterFinish),
-      buildUs: timing.buildDuration.inMicroseconds,
-      rasterUs: timing.rasterDuration.inMicroseconds,
-      totalUs: timing.totalSpan.inMicroseconds,
-    );
   }
 
   void addSample({

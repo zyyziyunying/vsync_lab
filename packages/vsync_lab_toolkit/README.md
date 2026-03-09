@@ -35,7 +35,7 @@ are not part of the stable public API.
 - Android-focused workflow today
 - Flutter SDK compatible with Dart `^3.11.0`
 
-This package currently depends on Flutter runtime APIs such as `WidgetsBinding` and `FrameTiming`, so it is intended for Flutter apps rather than pure Dart usage.
+Core aggregation and observability logic operate on plain sample data so they can be exercised without real Flutter frame callbacks. Flutter runtime APIs such as `WidgetsBinding` and `FrameTiming` are now confined to the monitor's integration layer, so the package remains intended for Flutter apps while keeping its core logic easier to test.
 
 ## Install
 

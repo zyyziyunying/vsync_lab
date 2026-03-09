@@ -6,6 +6,8 @@
 - Keep `FrameLogSaveResult` focused on exported file names and paths.
 - Narrow the barrel export to stable host-app APIs only.
 - Keep aggregator and observability builder types under `lib/src/`.
+- Move `FrameTiming` adaptation into a thinner Flutter glue layer.
+- Keep core aggregation and logging centered on `addSample(...)` input.
 
 ## 0.1.0
 

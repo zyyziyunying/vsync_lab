@@ -100,20 +100,19 @@
 - 跨项目复用时不必覆写仓库特定默认值
 - `FrameLogSaveResult` 的 API 语义更聚焦、更稳定
 
-### 4. Core 还不够“纯”，影响测试与扩展
+### 4. Core 纯度已有改善，但仍保留 Flutter 集成层
 
-当前聚合器与日志记录器仍直接处理 `FrameTiming` / `dart:ui`：
+当前聚合器与日志记录器已经收口为纯数据输入：
 
-- `FrameMetricsAggregator.addTiming(FrameTiming timing)`
-- `FrameObservabilityLog.addTiming(FrameTiming timing)`
+- `FrameMetricsAggregator.addSample(...)`
+- `FrameObservabilityLog.addSample(...)`
 
-虽然也提供了 `addSample(...)`，但整体模型仍偏 Flutter 运行时绑定。
+`FrameTiming` 到样本数据的转换被收敛到更薄的 Flutter glue code，主要留在监控器的监听与适配层。
 
-影响：
+当前剩余影响：
 
-- 不利于做纯 Dart 单元测试
-- 不利于做离线日志回放分析
-- 不利于未来拆出 CLI / desktop 分析工具
+- `FrameTimingMonitor` 仍承担 `WidgetsBinding` 监听职责
+- 未来若要拆出纯 Dart 包，仍需要继续评估 `core + flutter` 双层边界
 
 ### 5. 参数边界还没有完全硬化
 

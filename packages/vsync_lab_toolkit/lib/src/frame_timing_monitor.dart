@@ -8,6 +8,8 @@ import 'frame_log_file_exporter.dart';
 import 'frame_metrics_aggregator.dart';
 import 'frame_metrics_snapshot.dart';
 import 'frame_observability_log.dart';
+import 'frame_sample.dart';
+import 'frame_timing_adapter.dart';
 
 class FrameTimingMonitor extends ChangeNotifier {
   FrameTimingMonitor({
@@ -194,12 +196,7 @@ class FrameTimingMonitor extends ChangeNotifier {
   }
 
   void addTiming(FrameTiming timing) {
-    _recordSample(
-      frameEndUs: timing.timestampInMicroseconds(FramePhase.rasterFinish),
-      buildUs: timing.buildDuration.inMicroseconds,
-      rasterUs: timing.rasterDuration.inMicroseconds,
-      totalUs: timing.totalSpan.inMicroseconds,
-    );
+    _recordFrameSample(frameSampleFromFrameTiming(timing));
     _finishRecordingBatch();
   }
 
@@ -209,44 +206,36 @@ class FrameTimingMonitor extends ChangeNotifier {
     required int rasterUs,
     required int totalUs,
   }) {
-    _recordSample(
-      frameEndUs: frameEndUs,
-      buildUs: buildUs,
-      rasterUs: rasterUs,
-      totalUs: totalUs,
+    _recordFrameSample(
+      FrameSample(
+        frameEndUs: frameEndUs,
+        buildUs: buildUs,
+        rasterUs: rasterUs,
+        totalUs: totalUs,
+      ),
     );
     _finishRecordingBatch();
   }
 
   void _onTimings(List<FrameTiming> timings) {
-    for (final timing in timings) {
-      _recordSample(
-        frameEndUs: timing.timestampInMicroseconds(FramePhase.rasterFinish),
-        buildUs: timing.buildDuration.inMicroseconds,
-        rasterUs: timing.rasterDuration.inMicroseconds,
-        totalUs: timing.totalSpan.inMicroseconds,
-      );
+    for (final sample in frameSamplesFromFrameTimings(timings)) {
+      _recordFrameSample(sample);
     }
     _finishRecordingBatch();
   }
 
-  void _recordSample({
-    required int frameEndUs,
-    required int buildUs,
-    required int rasterUs,
-    required int totalUs,
-  }) {
+  void _recordFrameSample(FrameSample sample) {
     _aggregator.addSample(
-      frameEndUs: frameEndUs,
-      buildUs: buildUs,
-      rasterUs: rasterUs,
-      totalUs: totalUs,
+      frameEndUs: sample.frameEndUs,
+      buildUs: sample.buildUs,
+      rasterUs: sample.rasterUs,
+      totalUs: sample.totalUs,
     );
     _observabilityLog.addSample(
-      frameEndUs: frameEndUs,
-      buildUs: buildUs,
-      rasterUs: rasterUs,
-      totalUs: totalUs,
+      frameEndUs: sample.frameEndUs,
+      buildUs: sample.buildUs,
+      rasterUs: sample.rasterUs,
+      totalUs: sample.totalUs,
     );
   }
 

@@ -53,4 +53,38 @@ void main() {
     );
     expect(aggregator.targetRefreshRate, 60);
   });
+
+  test('aggregates snapshot metrics from pure sample data', () {
+    final aggregator = FrameMetricsAggregator(targetRefreshRate: 60);
+
+    aggregator.addSample(
+      frameEndUs: 1000000,
+      buildUs: 3000,
+      rasterUs: 2000,
+      totalUs: 7000,
+    );
+    aggregator.addSample(
+      frameEndUs: 1016667,
+      buildUs: 4000,
+      rasterUs: 2500,
+      totalUs: 17000,
+    );
+    aggregator.addSample(
+      frameEndUs: 1050000,
+      buildUs: 4500,
+      rasterUs: 2700,
+      totalUs: 8000,
+    );
+
+    final snapshot = aggregator.snapshot();
+
+    expect(snapshot.sampleCount, 3);
+    expect(snapshot.averageFps, closeTo(40, 0.01));
+    expect(snapshot.low1PercentFps, closeTo(30, 0.01));
+    expect(snapshot.jankRatio, closeTo(1 / 3, 0.000001));
+    expect(snapshot.vsyncMissCount, 1);
+    expect(snapshot.maxConsecutiveVsyncMiss, 1);
+    expect(snapshot.averageUiThreadMs, closeTo(3.8333333333, 0.000001));
+    expect(snapshot.averageRasterThreadMs, closeTo(2.4, 0.000001));
+  });
 }

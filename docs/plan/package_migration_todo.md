@@ -106,10 +106,10 @@
 
 ### 3.1 降低对 Flutter 运行时的耦合
 
-- [ ] 盘点 `dart:ui` / `FrameTiming` 直接依赖点
-- [ ] 评估让核心聚合逻辑以纯数据输入为主
-- [ ] 保留 `addSample(...)` 作为核心数据输入接口
-- [ ] 将 `FrameTiming` 适配留在更薄的一层 Flutter glue code
+- [x] 盘点 `dart:ui` / `FrameTiming` 直接依赖点
+- [x] 评估让核心聚合逻辑以纯数据输入为主
+- [x] 保留 `addSample(...)` 作为核心数据输入接口
+- [x] 将 `FrameTiming` 适配留在更薄的一层 Flutter glue code
 
 验收标准：
 
