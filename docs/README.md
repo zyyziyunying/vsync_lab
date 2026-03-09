@@ -141,6 +141,7 @@ EOF
   - 新增统一日志导出（`schemaVersion: 1`，`logType: vsync_lab.frame_observability`）
   - 支持记录每帧关键字段：`frameEndUs`、`expectedIntervalUs`、`actualIntervalUs`、`intervalDeltaUs`、`intervalDeltaRatio`、`isVsyncMiss`
   - 面板新增 `Save frame log` 按钮，保存内容包含 `scenario`、`scenarioSettings`、`snapshot`、`records`
+  - 保存成功弹窗优先给出 `./scripts/pull_and_analyze_frame_log.ps1 -Scenario <scenario>`，同时保留手动 `adb` 拉取命令
   - 默认环形缓冲区容量为 1200 帧，便于 10~20 秒窗口对比
 
 ---
@@ -148,5 +149,5 @@ EOF
 ## 11. Phase 1 使用建议（最小流程）
 
 1. 进入 `Animation stress` 或 `Scroll stress`，运行 15~30 秒并完成预热。
-2. 点击 `Save frame log`，然后优先执行 `./scripts/pull_and_analyze_frame_log.ps1 -Scenario <scenario>`；如果手动拉取，先用 `adb shell run-as com.harrypet.vsync_lab pwd` 获取应用数据目录，再拼接绝对路径 `<app_data_dir>/cache/frame_log_<scenario>_latest.json` 进行 `adb exec-out run-as ... cat ...`。
+2. 点击 `Save frame log`，优先直接复制弹窗中的 `./scripts/pull_and_analyze_frame_log.ps1 -Scenario <scenario>` 并执行；只有在需要手动拉取时，才先用 `adb shell run-as com.harrypet.vsync_lab pwd` 获取应用数据目录，再拼接绝对路径 `<app_data_dir>/cache/frame_log_<scenario>_latest.json` 执行 `adb exec-out run-as ... cat ...`。
 3. 继续采集 `gfxinfo` 与 Perfetto，按同一轮实验归档到 `artifacts/`。

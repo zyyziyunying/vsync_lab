@@ -24,15 +24,6 @@ class FrameLogSaveResult {
   String get archivedRelativePath => 'cache/$archivedFileName';
   String get latestAbsolutePath => '$cacheDirectoryPath/$latestFileName';
   String get archivedAbsolutePath => '$cacheDirectoryPath/$archivedFileName';
-
-  String buildAdbPullCommand({
-    String packageName = 'com.harrypet.vsync_lab',
-    String? outputPath,
-  }) {
-    final targetPath = outputPath ?? 'artifacts/$latestFileName';
-    return 'adb exec-out run-as $packageName cat $latestAbsolutePath > '
-        '$targetPath';
-  }
 }
 
 class FrameLogFileExporter implements FrameLogExporter {

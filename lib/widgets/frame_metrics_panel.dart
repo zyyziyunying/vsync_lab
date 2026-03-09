@@ -2,6 +2,8 @@ import 'package:common/common.dart';
 import 'package:flutter/material.dart';
 import 'package:vsync_lab_toolkit/vsync_lab_toolkit.dart';
 
+import '../metrics/frame_log_pull_command.dart';
+
 class FrameMetricsPanel extends StatelessWidget {
   const FrameMetricsPanel({
     required this.snapshot,
@@ -120,6 +122,9 @@ class FrameMetricsPanel extends StatelessWidget {
       await showDialog<void>(
         context: context,
         builder: (dialogContext) {
+          final analysisCommand = buildFrameLogAnalysisCommand(result);
+          final pullCommand = buildFrameLogPullCommand(result);
+
           return AlertDialog(
             title: const Text('Frame log saved'),
             content: SingleChildScrollView(
@@ -131,9 +136,13 @@ class FrameMetricsPanel extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text('Archive file: ${result.archivedAbsolutePath}'),
                   const SizedBox(height: 16),
-                  const Text('Pull the latest file to your computer with:'),
+                  const Text('Recommended analysis command:'),
                   const SizedBox(height: 8),
-                  SelectableText(result.buildAdbPullCommand()),
+                  SelectableText(analysisCommand),
+                  const SizedBox(height: 16),
+                  const Text('Manual adb pull command:'),
+                  const SizedBox(height: 8),
+                  SelectableText(pullCommand),
                 ],
               ),
             ),

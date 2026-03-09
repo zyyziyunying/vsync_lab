@@ -10,6 +10,12 @@
 - 如果目标是一个独立、稳定、便于外部团队直接集成和测试的 package，当前完成度约为 **4.5/10**。
 - 当前最重要的不是继续堆功能，而是把 **测试、文档、依赖边界** 真正收口到 `packages/vsync_lab_toolkit`。
 
+## 当日已完成更新
+
+- `packages/vsync_lab_toolkit` 已补齐独立 `README.md`、`CHANGELOG.md`、`example/` 与包内测试。
+- 子包目录 `flutter analyze` 与 `flutter test` 现已可以独立通过。
+- `FrameLogSaveResult.buildAdbPullCommand()` 已从 toolkit 移除；仓库特定的 `adb` 命令拼装已迁回主应用。
+
 ## 当前做得好的地方
 
 ### 1. 核心能力已经被抽离到独立子包
@@ -50,53 +56,49 @@
 
 ## 当前不足与风险点
 
-### 1. 测试还没有真正跟着 package 走
+### 1. 测试闭环问题已基本解决
 
-当前核心测试还放在主应用根目录：
+此前核心测试主要停留在主应用侧，package 化闭环不完整；当前已迁移并补齐到：
 
-- `test/metrics/frame_timing_monitor_test.dart`
-- `test/metrics/frame_observability_log_test.dart`
-- `test/metrics/frame_log_file_exporter_test.dart`
+- `packages/vsync_lab_toolkit/test/frame_timing_monitor_test.dart`
+- `packages/vsync_lab_toolkit/test/frame_observability_log_test.dart`
+- `packages/vsync_lab_toolkit/test/frame_log_file_exporter_test.dart`
 
-而且测试导入路径仍然是主应用的：
+当前收益：
 
-- `package:vsync_lab/metrics/...`
+- 子包可以独立证明自己可测试
+- 测试直接依赖 `package:vsync_lab_toolkit/vsync_lab_toolkit.dart`
+- 主应用不再承担对子包核心能力的“中转测试”职责
 
-这带来的问题是：
+### 2. 子包已具备基础独立消费形态，但仍偏工作区内部模块
 
-- 子包无法单独证明自己可测试
-- 主应用只是通过 re-export 间接测试了 toolkit
-- 将来如果主应用删掉中转层，测试会一起失效
-
-### 2. 子包还不具备独立分发形态
-
-`packages/vsync_lab_toolkit` 当前缺少：
+`packages/vsync_lab_toolkit` 当前已经具备：
 
 - 独立 `README.md`
 - 独立 `CHANGELOG.md`
 - `example/`
 - 子包测试目录下的实际测试文件
 
-此外，`pubspec.yaml` 里仍然是：
+不过，`pubspec.yaml` 里仍然是：
 
 - `publish_to: 'none'`
 
-说明：这更像“工作区内部模块”，还不像一个真正对外可消费的 package。
+说明：它已经不像“只有源码抽离”的半成品，但当前定位仍更接近“工作区内部复用模块”，而不是准备直接发布到 `pub.dev` 的公共 package。
 
-### 3. API 中仍混有 App / Android 实验语义
+### 3. API 去业务化已完成一项关键整改
 
-`FrameLogSaveResult.buildAdbPullCommand()` 里默认写死了：
+此前 `FrameLogSaveResult.buildAdbPullCommand()` 默认写死了：
 
 - 包名 `com.harrypet.vsync_lab`
 - 输出目录 `artifacts/...`
 
-这类逻辑更适合保留在主应用或 `scripts/`，不应成为通用 package API 的一部分。
+这部分现已移回主应用侧 helper；toolkit 只保留文件名、相对路径、绝对路径等通用结果数据。
 
-风险：
+这次整改带来的收益：
 
-- 让 package 默认带有特定业务仓库假设
-- 降低跨项目复用的通用性
-- 增加未来 API 兼容负担
+- package 不再默认带有当前仓库包名与目录结构假设
+- 跨项目复用时不必覆写仓库特定默认值
+- `FrameLogSaveResult` 的 API 语义更聚焦、更稳定
 
 ### 4. Core 还不够“纯”，影响测试与扩展
 
@@ -154,11 +156,9 @@
 - 根目录 `flutter analyze`：通过
 - 根目录 `flutter test`：通过
 - 子包目录 `flutter analyze`：通过
-- 子包目录 `flutter test`：失败
+- 子包目录 `flutter test`：通过
 
-子包测试失败的原因不是实现错误，而是 **`packages/vsync_lab_toolkit/test` 下没有测试文件**。
-
-这恰好也说明了当前 package 化还没有闭环。
+说明：`packages/vsync_lab_toolkit` 现已具备独立分析、独立测试与独立示例运行所需的基础形态。
 
 ## 当前阶段建议
 
@@ -166,12 +166,12 @@
 
 优先级最高，建议先做：
 
-1. 把核心测试迁移到 `packages/vsync_lab_toolkit/test/`
-2. 测试直接使用 `package:vsync_lab_toolkit/vsync_lab_toolkit.dart`
-3. 主应用逐步直接 import 子包，减少对 `lib/metrics/*.dart` 中转 re-export 的依赖
-4. 给子包补齐独立 `README.md`
-5. 给子包补齐 `CHANGELOG.md`
-6. 增加最小可运行 `example/`
+1. （已完成）把核心测试迁移到 `packages/vsync_lab_toolkit/test/`
+2. （已完成）测试直接使用 `package:vsync_lab_toolkit/vsync_lab_toolkit.dart`
+3. 主应用逐步直接 import 子包，减少对 `lib/metrics/*.dart` 中转层的依赖
+4. （已完成）给子包补齐独立 `README.md`
+5. （已完成）给子包补齐 `CHANGELOG.md`
+6. （已完成）增加最小可运行 `example/`
 
 完成这一阶段后，子包才算真正具备“独立存在能力”。
 
@@ -179,7 +179,7 @@
 
 建议项：
 
-1. 将 `buildAdbPullCommand()` 移回主应用或 `scripts/`
+1. （已完成）将 `buildAdbPullCommand()` 移回主应用或 `scripts/`
 2. 为 `targetRefreshRate` 等关键参数增加 assert / 校验
 3. 让 `FrameMetricsSnapshot.empty()` 返回合理的 `frameBudgetMs`
 4. 收窄 `vsync_lab_toolkit.dart` 的公共导出面
@@ -210,4 +210,3 @@
 当前方向是正确的，而且已经走了一半。
 
 最应该优先推进的不是继续增加实验功能，而是把 **测试、文档、依赖边界** 真正迁移并固定到 `packages/vsync_lab_toolkit`，让它先成为一个能独立分析、独立测试、独立说明的 package。
-

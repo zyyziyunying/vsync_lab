@@ -50,6 +50,11 @@ final result = await monitor.saveObservabilityLog();
 debugPrint(result.latestAbsolutePath);
 ```
 
+Repo-specific follow-up actions such as `adb exec-out run-as ...` or
+archiving into `artifacts/` are intentionally left to the host app or scripts.
+Use `result.scenario`, `result.latestFileName`, and `result.latestAbsolutePath`
+to build those commands outside the package.
+
 Default behavior: when the frame-log ring buffer reaches capacity, `FrameTimingMonitor` auto-saves the current log once per filled buffer. Calling `reset()` clears the buffer and re-arms auto-save.
 
 ## Example

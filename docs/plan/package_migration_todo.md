@@ -65,10 +65,10 @@
 
 ### 2.1 移除 package 中的仓库特定逻辑
 
-- [ ] 审查 `FrameLogSaveResult.buildAdbPullCommand()` 的职责
-- [ ] 评估将 adb pull 命令拼装逻辑迁回主应用或 `scripts/`
-- [ ] 移除默认 `com.harrypet.vsync_lab` 这类仓库特定值
-- [ ] 移除默认 `artifacts/...` 这类实验目录假设
+- [x] 审查 `FrameLogSaveResult.buildAdbPullCommand()` 的职责
+- [x] 评估将 adb pull 命令拼装逻辑迁回主应用或 `scripts/`
+- [x] 移除默认 `com.harrypet.vsync_lab` 这类仓库特定值
+- [x] 移除默认 `artifacts/...` 这类实验目录假设
 
 验收标准：
 

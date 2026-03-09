@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Remove repo-specific `adb` pull command generation from `FrameLogSaveResult`.
+- Keep `FrameLogSaveResult` focused on exported file names and paths.
+
 ## 0.1.0
 
 - Extract reusable frame timing monitor and frame-log exporter into `vsync_lab_toolkit`.
