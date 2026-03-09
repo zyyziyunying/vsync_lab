@@ -2,13 +2,15 @@ import 'dart:collection';
 import 'dart:math' as math;
 import 'dart:ui';
 
+import 'argument_validation.dart';
 import 'frame_metrics_snapshot.dart';
 
 class FrameMetricsAggregator {
   FrameMetricsAggregator({
     required double targetRefreshRate,
-    this.maxSamples = 240,
-  }) : _targetRefreshRate = targetRefreshRate;
+    int maxSamples = 240,
+  })  : maxSamples = validatePositiveInt(maxSamples, 'maxSamples'),
+        _targetRefreshRate = validateTargetRefreshRate(targetRefreshRate);
 
   final int maxSamples;
   final Queue<_FrameSample> _samples = Queue<_FrameSample>();
@@ -19,7 +21,7 @@ class FrameMetricsAggregator {
   int get sampleCount => _samples.length;
 
   void updateTargetRefreshRate(double value) {
-    _targetRefreshRate = value;
+    _targetRefreshRate = validateTargetRefreshRate(value);
   }
 
   void clear() {
@@ -69,7 +71,7 @@ class FrameMetricsAggregator {
     }
 
     final averageIntervalMs = _average(intervalsMs);
-    final frameBudgetMs = 1000 / _targetRefreshRate;
+    final frameBudgetMs = frameBudgetMsForRefreshRate(_targetRefreshRate);
 
     final averageFps = averageIntervalMs == 0 ? 0.0 : 1000 / averageIntervalMs;
 

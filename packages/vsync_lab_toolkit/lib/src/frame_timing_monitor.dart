@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flutter/widgets.dart';
 
+import 'argument_validation.dart';
 import 'frame_log_file_exporter.dart';
 import 'frame_metrics_aggregator.dart';
 import 'frame_metrics_snapshot.dart';
@@ -19,12 +20,37 @@ class FrameTimingMonitor extends ChangeNotifier {
     double targetRefreshRate = 60,
     int maxSamples = 240,
     int maxLogRecords = 1200,
-    this.scenario = 'unknown',
+    String scenario = 'unknown',
     FrameLogExporter exporter = const FrameLogFileExporter(),
     FrameLogScenarioSettingsBuilder? scenarioSettingsBuilder,
-    this.autoSaveOnBufferFull = true,
+    bool autoSaveOnBufferFull = true,
     ValueChanged<FrameLogSaveResult>? onFrameLogSaved,
     FrameLogSaveErrorCallback? onFrameLogSaveError,
+  }) : this._(
+          targetRefreshRate: validateTargetRefreshRate(targetRefreshRate),
+          maxSamples: validatePositiveInt(maxSamples, 'maxSamples'),
+          maxLogRecords: validatePositiveInt(
+            maxLogRecords,
+            'maxLogRecords',
+          ),
+          scenario: scenario,
+          exporter: exporter,
+          scenarioSettingsBuilder: scenarioSettingsBuilder,
+          autoSaveOnBufferFull: autoSaveOnBufferFull,
+          onFrameLogSaved: onFrameLogSaved,
+          onFrameLogSaveError: onFrameLogSaveError,
+        );
+
+  FrameTimingMonitor._({
+    required double targetRefreshRate,
+    required int maxSamples,
+    required int maxLogRecords,
+    required this.scenario,
+    required FrameLogExporter exporter,
+    required FrameLogScenarioSettingsBuilder? scenarioSettingsBuilder,
+    required this.autoSaveOnBufferFull,
+    required ValueChanged<FrameLogSaveResult>? onFrameLogSaved,
+    required FrameLogSaveErrorCallback? onFrameLogSaveError,
   })  : _aggregator = FrameMetricsAggregator(
           targetRefreshRate: targetRefreshRate,
           maxSamples: maxSamples,
@@ -97,10 +123,12 @@ class FrameTimingMonitor extends ChangeNotifier {
   }
 
   void applyTargetRefreshRate(double hz) {
-    _aggregator.updateTargetRefreshRate(hz);
-    _observabilityLog.updateTargetRefreshRate(hz);
+    final validatedHz = validateTargetRefreshRate(hz);
+
+    _aggregator.updateTargetRefreshRate(validatedHz);
+    _observabilityLog.updateTargetRefreshRate(validatedHz);
     _snapshot = _aggregator.sampleCount < 2
-        ? FrameMetricsSnapshot.empty(targetRefreshRate: hz)
+        ? FrameMetricsSnapshot.empty(targetRefreshRate: validatedHz)
         : _aggregator.snapshot();
     notifyListeners();
   }

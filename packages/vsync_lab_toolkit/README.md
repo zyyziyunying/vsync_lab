@@ -57,6 +57,8 @@ to build those commands outside the package.
 
 Default behavior: when the frame-log ring buffer reaches capacity, `FrameTimingMonitor` auto-saves the current log once per filled buffer. Calling `reset()` clears the buffer and re-arms auto-save.
 
+`targetRefreshRate`, `maxSamples`, and `maxLogRecords` must all be greater than `0`. Invalid values throw `ArgumentError` so edge-case behavior stays explicit.
+
 ## Example
 
 See `example/lib/main.dart` for a minimal Flutter app that:

@@ -1,3 +1,5 @@
+import 'argument_validation.dart';
+
 class FrameMetricsSnapshot {
   const FrameMetricsSnapshot({
     required this.generatedAt,
@@ -15,9 +17,12 @@ class FrameMetricsSnapshot {
   });
 
   factory FrameMetricsSnapshot.empty({required double targetRefreshRate}) {
+    final validatedTargetRefreshRate =
+        validateTargetRefreshRate(targetRefreshRate);
+
     return FrameMetricsSnapshot(
       generatedAt: DateTime.now(),
-      targetRefreshRate: targetRefreshRate,
+      targetRefreshRate: validatedTargetRefreshRate,
       sampleCount: 0,
       averageFps: 0,
       low1PercentFps: 0,
@@ -27,7 +32,7 @@ class FrameMetricsSnapshot {
       maxConsecutiveVsyncMiss: 0,
       averageUiThreadMs: 0,
       averageRasterThreadMs: 0,
-      frameBudgetMs: 0,
+      frameBudgetMs: frameBudgetMsForRefreshRate(validatedTargetRefreshRate),
     );
   }
 

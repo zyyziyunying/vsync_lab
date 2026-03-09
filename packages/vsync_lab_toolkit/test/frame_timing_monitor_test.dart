@@ -83,6 +83,18 @@ void main() {
     expect(exporter.savedLogs.length, 2);
     expect(monitor.lastFrameLogSaveResult?.scenario, 'scroll');
   });
+
+  test('rejects invalid constructor parameters and refresh rate updates', () {
+    expect(() => FrameTimingMonitor(targetRefreshRate: 0), throwsArgumentError);
+    expect(() => FrameTimingMonitor(maxSamples: 0), throwsArgumentError);
+    expect(() => FrameTimingMonitor(maxLogRecords: 0), throwsArgumentError);
+
+    final monitor = FrameTimingMonitor(targetRefreshRate: 60);
+    expect(
+        () => monitor.applyTargetRefreshRate(double.nan), throwsArgumentError);
+    expect(monitor.targetRefreshRate, 60);
+    expect(monitor.snapshot.frameBudgetMs, closeTo(16.6666666667, 0.000001));
+  });
 }
 
 class _FakeFrameLogExporter implements FrameLogExporter {

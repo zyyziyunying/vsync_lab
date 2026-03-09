@@ -76,10 +76,10 @@
 
 ### 2.2 硬化关键参数与边界条件
 
-- [ ] 为 `targetRefreshRate` 增加 assert 或显式参数校验
-- [ ] 审查 `maxSamples` 与 `maxLogRecords` 的边界值处理
-- [ ] 修正 `FrameMetricsSnapshot.empty()` 中的 `frameBudgetMs`
-- [ ] 为非法输入补充对应测试
+- [x] 为 `targetRefreshRate` 增加 assert 或显式参数校验
+- [x] 审查 `maxSamples` 与 `maxLogRecords` 的边界值处理
+- [x] 修正 `FrameMetricsSnapshot.empty()` 中的 `frameBudgetMs`
+- [x] 为非法输入补充对应测试
 
 验收标准：
 

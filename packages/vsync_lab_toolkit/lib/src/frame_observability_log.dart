@@ -1,13 +1,15 @@
 import 'dart:collection';
 import 'dart:ui';
 
+import 'argument_validation.dart';
 import 'frame_metrics_snapshot.dart';
 
 class FrameObservabilityLog {
   FrameObservabilityLog({
     required double targetRefreshRate,
-    this.maxRecords = 1200,
-  }) : _targetRefreshRate = targetRefreshRate;
+    int maxRecords = 1200,
+  })  : maxRecords = validatePositiveInt(maxRecords, 'maxRecords'),
+        _targetRefreshRate = validateTargetRefreshRate(targetRefreshRate);
 
   final int maxRecords;
   final Queue<FrameIntervalRecord> _records = Queue<FrameIntervalRecord>();
@@ -18,10 +20,10 @@ class FrameObservabilityLog {
 
   double get targetRefreshRate => _targetRefreshRate;
   int get recordCount => _records.length;
-  bool get isFull => maxRecords > 0 && _records.length >= maxRecords;
+  bool get isFull => _records.length >= maxRecords;
 
   void updateTargetRefreshRate(double hz) {
-    _targetRefreshRate = hz;
+    _targetRefreshRate = validateTargetRefreshRate(hz);
   }
 
   void clear() {
@@ -46,20 +48,18 @@ class FrameObservabilityLog {
     required int totalUs,
   }) {
     final expectedIntervalUs =
-        _targetRefreshRate <= 0 ? 0 : (1000000 / _targetRefreshRate).round();
+        expectedFrameIntervalUsForRefreshRate(_targetRefreshRate);
     final actualIntervalUs =
         _lastFrameEndUs == null ? null : frameEndUs - _lastFrameEndUs!;
-    final intervalDeltaUs = actualIntervalUs == null || expectedIntervalUs == 0
-        ? null
-        : actualIntervalUs - expectedIntervalUs;
+    final intervalDeltaUs =
+        actualIntervalUs == null ? null : actualIntervalUs - expectedIntervalUs;
     final intervalDeltaRatio =
         intervalDeltaUs == null ? null : intervalDeltaUs / expectedIntervalUs;
 
     final frameBudgetUs = expectedIntervalUs;
     final missThresholdUs = (expectedIntervalUs * 1.5).round();
-    final isVsyncMiss = actualIntervalUs != null &&
-        expectedIntervalUs > 0 &&
-        actualIntervalUs > missThresholdUs;
+    final isVsyncMiss =
+        actualIntervalUs != null && actualIntervalUs > missThresholdUs;
 
     _records.add(
       FrameIntervalRecord(
@@ -95,8 +95,7 @@ class FrameObservabilityLog {
       'logType': 'vsync_lab.frame_observability',
       'generatedAt': DateTime.now().toIso8601String(),
       'targetRefreshRateHz': _targetRefreshRate,
-      'frameBudgetMs':
-          _targetRefreshRate == 0 ? 0.0 : 1000 / _targetRefreshRate,
+      'frameBudgetMs': frameBudgetMsForRefreshRate(_targetRefreshRate),
       'recordCount': recordCount,
       'maxRecords': maxRecords,
       'scenario': scenario ?? 'unknown',

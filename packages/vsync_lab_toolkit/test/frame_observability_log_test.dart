@@ -77,4 +77,46 @@ void main() {
     expect(records.first['frameIndex'], 2);
     expect(records.last['frameIndex'], 3);
   });
+
+  test('retains only the latest record at the minimum valid buffer size', () {
+    final log = FrameObservabilityLog(targetRefreshRate: 60, maxRecords: 1);
+
+    log.addSample(
+      frameEndUs: 1000000,
+      buildUs: 2000,
+      rasterUs: 2000,
+      totalUs: 5000,
+    );
+    log.addSample(
+      frameEndUs: 1016667,
+      buildUs: 2200,
+      rasterUs: 2100,
+      totalUs: 5200,
+    );
+
+    final data = log.buildUnifiedLog(
+      snapshot: FrameMetricsSnapshot.empty(targetRefreshRate: 60),
+    );
+    final records =
+        (data['records'] as List<dynamic>).cast<Map<String, dynamic>>();
+
+    expect(log.recordCount, 1);
+    expect(log.isFull, isTrue);
+    expect(records.single['frameIndex'], 2);
+  });
+
+  test('rejects invalid refresh rates and record capacities', () {
+    expect(
+      () => FrameObservabilityLog(targetRefreshRate: 0, maxRecords: 1),
+      throwsArgumentError,
+    );
+    expect(
+      () => FrameObservabilityLog(targetRefreshRate: 60, maxRecords: 0),
+      throwsArgumentError,
+    );
+
+    final log = FrameObservabilityLog(targetRefreshRate: 60, maxRecords: 2);
+    expect(() => log.updateTargetRefreshRate(-120), throwsArgumentError);
+    expect(log.targetRefreshRate, 60);
+  });
 }
