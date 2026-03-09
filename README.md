@@ -60,6 +60,7 @@ Panel export actions:
 - `scripts/collect_gfxinfo.ps1`
 - `scripts/collect_perfetto.ps1`
 - `scripts/analyze_frame_log.ps1`
+- `scripts/pull_and_analyze_frame_log.ps1`
 
 Example:
 
@@ -67,7 +68,19 @@ Example:
 ./scripts/collect_gfxinfo.ps1 -PackageName com.harrypet.vsync_lab
 ./scripts/collect_perfetto.ps1 -TraceSeconds 15
 ./scripts/analyze_frame_log.ps1 -Path artifacts/frame_log_animation_latest.json
+./scripts/pull_and_analyze_frame_log.ps1 -Scenario animation
 ```
+
+One-click frame log workflow:
+
+```powershell
+./scripts/pull_and_analyze_frame_log.ps1
+./scripts/pull_and_analyze_frame_log.ps1 -Scenario animation
+./scripts/pull_and_analyze_frame_log.ps1 -UseExistingFile artifacts/frame_log_animation_latest.json
+```
+
+- If `-Scenario` is omitted, the script auto-detects the newest `frame_log_*_latest.json` in the app cache.
+- If `-UseExistingFile` is provided, the script skips `adb pull` and only runs the analysis step.
 
 Artifacts are stored in `artifacts/`.
 

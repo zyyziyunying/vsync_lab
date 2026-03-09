@@ -148,5 +148,5 @@ EOF
 ## 11. Phase 1 使用建议（最小流程）
 
 1. 进入 `Animation stress` 或 `Scroll stress`，运行 15~30 秒并完成预热。
-2. 点击 `Save frame log`，然后在电脑上执行 `adb exec-out run-as com.harrypet.vsync_lab cat cache/frame_log_<scenario>_latest.json > artifacts/frame_log_<scenario>_latest.json` 拉取 JSON。
+2. 点击 `Save frame log`，然后优先执行 `./scripts/pull_and_analyze_frame_log.ps1 -Scenario <scenario>`；如果手动拉取，先用 `adb shell run-as com.harrypet.vsync_lab pwd` 获取应用数据目录，再拼接绝对路径 `<app_data_dir>/cache/frame_log_<scenario>_latest.json` 进行 `adb exec-out run-as ... cat ...`。
 3. 继续采集 `gfxinfo` 与 Perfetto，按同一轮实验归档到 `artifacts/`。

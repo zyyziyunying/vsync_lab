@@ -34,7 +34,7 @@ Paste copied JSON here:
 
 - `collect_gfxinfo.ps1` output path:
 - `collect_perfetto.ps1` output path:
-- In-app unified frame log JSON (`Save frame log` -> pull `cache/frame_log_<scenario>_latest.json` via `adb exec-out run-as ... cat ...`):
+- In-app unified frame log JSON (`Save frame log` -> use `./scripts/pull_and_analyze_frame_log.ps1 -Scenario <scenario>` or pull `<app_data_dir>/cache/frame_log_<scenario>_latest.json` via `adb exec-out run-as ... cat ...`):
 - Additional logs:
 
 ## Timeline Observations

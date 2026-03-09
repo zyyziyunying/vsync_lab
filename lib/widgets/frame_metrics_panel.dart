@@ -129,9 +129,9 @@ class FrameMetricsPanel extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Latest file: ${result.latestRelativePath}'),
+                  Text('Latest file: ${result.latestAbsolutePath}'),
                   const SizedBox(height: 8),
-                  Text('Archive file: ${result.archivedRelativePath}'),
+                  Text('Archive file: ${result.archivedAbsolutePath}'),
                   const SizedBox(height: 16),
                   const Text('Pull the latest file to your computer with:'),
                   const SizedBox(height: 8),
