@@ -35,7 +35,8 @@ dependencies:
 
   common: ^0.1.0
   cupertino_icons: ^1.0.8
-  path_provider: ^2.1.5
+  vsync_lab_toolkit:
+    path: packages/vsync_lab_toolkit
 
 dev_dependencies:
   flutter_test:

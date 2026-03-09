@@ -50,6 +50,7 @@ void main() {
         (data['records'] as List<dynamic>).cast<Map<String, dynamic>>();
 
     expect(data['recordCount'], 2);
+    expect(log.isFull, isTrue);
     expect(records.first['frameIndex'], 2);
     expect(records.last['frameIndex'], 3);
   });

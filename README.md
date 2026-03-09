@@ -55,6 +55,34 @@ Panel export actions:
 - `Copy JSON`: snapshot metrics for the current rolling window
 - `Copy frame log`: Phase 1 unified log (per-frame timestamp, expected interval, actual interval delta, and miss flags)
 
+## Reuse in other apps
+
+The reusable monitor/exporter core now lives in `packages/vsync_lab_toolkit`.
+
+Add it to another Flutter app as a path or git dependency, for example:
+
+```yaml
+dependencies:
+  vsync_lab_toolkit:
+    path: ../vsync_lab/packages/vsync_lab_toolkit
+```
+
+Minimal integration:
+
+```dart
+final monitor = FrameTimingMonitor(
+  targetRefreshRate: 60,
+  scenario: 'home_feed',
+  scenarioSettingsBuilder: () => {
+    'tab': 'for_you',
+  },
+);
+
+monitor.start();
+```
+
+Default behavior: when the frame-log ring buffer reaches capacity, `FrameTimingMonitor` automatically saves one frame log snapshot to the app cache. Manual saves still work through `saveObservabilityLog()`.
+
 ## Data collection scripts
 
 - `scripts/collect_gfxinfo.ps1`

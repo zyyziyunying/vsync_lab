@@ -1,7 +1,6 @@
 import 'package:common/common.dart';
 import 'package:flutter/material.dart';
 
-import '../../metrics/frame_log_file_exporter.dart';
 import '../../metrics/frame_timing_monitor.dart';
 import '../../routes/app_routes.dart';
 import '../../widgets/frame_metrics_panel.dart';
@@ -18,7 +17,6 @@ class AnimationStressPage extends StatefulWidget {
 class _AnimationStressPageState extends State<AnimationStressPage> {
   final _refreshController = TextEditingController(text: '60');
   final _refreshRateParser = const RefreshRateParser();
-  final _frameLogExporter = const FrameLogFileExporter();
   late final FrameTimingMonitor _monitor;
 
   double _particleCount = 360;
@@ -28,7 +26,15 @@ class _AnimationStressPageState extends State<AnimationStressPage> {
   @override
   void initState() {
     super.initState();
-    _monitor = FrameTimingMonitor(targetRefreshRate: 60);
+    _monitor = FrameTimingMonitor(
+      targetRefreshRate: 60,
+      scenario: 'animation',
+      scenarioSettingsBuilder: () => <String, dynamic>{
+        'particleCount': _particleCount.round(),
+        'workloadLevel': _workloadLevel.round(),
+        'colorShift': _colorShift,
+      },
+    );
     _monitor.start();
   }
 
@@ -56,7 +62,7 @@ class _AnimationStressPageState extends State<AnimationStressPage> {
           },
           onReset: _monitor.reset,
           observabilityRecordCount: _monitor.observabilityRecordCount,
-          onSaveObservabilityLog: _saveFrameLog,
+          onSaveObservabilityLog: () => _monitor.saveObservabilityLog(),
         );
 
         final controls = _ControlsCard(
@@ -146,19 +152,6 @@ class _AnimationStressPageState extends State<AnimationStressPage> {
     _monitor.applyTargetRefreshRate(parsed.data!);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Target refresh rate set to ${parsed.data} Hz')),
-    );
-  }
-
-  Future<FrameLogSaveResult> _saveFrameLog() {
-    return _frameLogExporter.save(
-      _monitor.buildObservabilityLog(
-        scenario: 'animation',
-        scenarioSettings: <String, dynamic>{
-          'particleCount': _particleCount.round(),
-          'workloadLevel': _workloadLevel.round(),
-          'colorShift': _colorShift,
-        },
-      ),
     );
   }
 }
