@@ -88,10 +88,14 @@
 
 ### 2.3 收窄公共 API 导出面
 
-- [ ] 审查 `packages/vsync_lab_toolkit/lib/vsync_lab_toolkit.dart`
-- [ ] 区分“真正公共 API”与“内部实现类型”
-- [ ] 仅导出稳定且希望长期维护的类型
-- [ ] 记录暂不公开的内部能力
+- [x] 审查 `packages/vsync_lab_toolkit/lib/vsync_lab_toolkit.dart`
+- [x] 区分“真正公共 API”与“内部实现类型”
+- [x] 仅导出稳定且希望长期维护的类型
+- [x] 记录暂不公开的内部能力
+
+当前稳定公共 API：`FrameTimingMonitor`、`FrameMetricsSnapshot`、`FrameLogExporter`、`FrameLogFileExporter`、`FrameLogSaveResult`
+
+暂不公开的内部能力：`FrameMetricsAggregator`、`FrameObservabilityLog`、`FrameIntervalRecord`
 
 验收标准：
 

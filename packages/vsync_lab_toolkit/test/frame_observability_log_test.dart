@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vsync_lab_toolkit/src/frame_observability_log.dart';
 import 'package:vsync_lab_toolkit/vsync_lab_toolkit.dart';
 
 void main() {

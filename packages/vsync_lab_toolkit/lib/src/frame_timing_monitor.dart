@@ -9,12 +9,6 @@ import 'frame_metrics_aggregator.dart';
 import 'frame_metrics_snapshot.dart';
 import 'frame_observability_log.dart';
 
-typedef FrameLogScenarioSettingsBuilder = Map<String, dynamic> Function();
-typedef FrameLogSaveErrorCallback = void Function(
-  Object error,
-  StackTrace stackTrace,
-);
-
 class FrameTimingMonitor extends ChangeNotifier {
   FrameTimingMonitor({
     double targetRefreshRate = 60,
@@ -22,10 +16,10 @@ class FrameTimingMonitor extends ChangeNotifier {
     int maxLogRecords = 1200,
     String scenario = 'unknown',
     FrameLogExporter exporter = const FrameLogFileExporter(),
-    FrameLogScenarioSettingsBuilder? scenarioSettingsBuilder,
+    Map<String, dynamic> Function()? scenarioSettingsBuilder,
     bool autoSaveOnBufferFull = true,
     ValueChanged<FrameLogSaveResult>? onFrameLogSaved,
-    FrameLogSaveErrorCallback? onFrameLogSaveError,
+    void Function(Object error, StackTrace stackTrace)? onFrameLogSaveError,
   }) : this._(
           targetRefreshRate: validateTargetRefreshRate(targetRefreshRate),
           maxSamples: validatePositiveInt(maxSamples, 'maxSamples'),
@@ -47,10 +41,11 @@ class FrameTimingMonitor extends ChangeNotifier {
     required int maxLogRecords,
     required this.scenario,
     required FrameLogExporter exporter,
-    required FrameLogScenarioSettingsBuilder? scenarioSettingsBuilder,
+    required Map<String, dynamic> Function()? scenarioSettingsBuilder,
     required this.autoSaveOnBufferFull,
     required ValueChanged<FrameLogSaveResult>? onFrameLogSaved,
-    required FrameLogSaveErrorCallback? onFrameLogSaveError,
+    required void Function(Object error, StackTrace stackTrace)?
+        onFrameLogSaveError,
   })  : _aggregator = FrameMetricsAggregator(
           targetRefreshRate: targetRefreshRate,
           maxSamples: maxSamples,
@@ -69,9 +64,10 @@ class FrameTimingMonitor extends ChangeNotifier {
   final FrameMetricsAggregator _aggregator;
   final FrameObservabilityLog _observabilityLog;
   final FrameLogExporter _exporter;
-  final FrameLogScenarioSettingsBuilder? _scenarioSettingsBuilder;
+  final Map<String, dynamic> Function()? _scenarioSettingsBuilder;
   final ValueChanged<FrameLogSaveResult>? _onFrameLogSaved;
-  final FrameLogSaveErrorCallback? _onFrameLogSaveError;
+  final void Function(Object error, StackTrace stackTrace)?
+      _onFrameLogSaveError;
 
   final String scenario;
   final bool autoSaveOnBufferFull;

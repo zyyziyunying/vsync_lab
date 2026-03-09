@@ -4,6 +4,8 @@
 
 - Remove repo-specific `adb` pull command generation from `FrameLogSaveResult`.
 - Keep `FrameLogSaveResult` focused on exported file names and paths.
+- Narrow the barrel export to stable host-app APIs only.
+- Keep aggregator and observability builder types under `lib/src/`.
 
 ## 0.1.0
 

@@ -6,8 +6,28 @@ Reusable Flutter frame timing monitoring and frame-log exporting extracted from 
 
 - `FrameTimingMonitor`: listens to `FrameTiming`, aggregates rolling metrics, and manages frame-log capture.
 - `FrameMetricsSnapshot`: immutable summary of the current rolling window.
-- `FrameObservabilityLog`: bounded per-frame log builder for later export or analysis.
 - `FrameLogExporter` and `FrameLogFileExporter`: save unified logs to app cache.
+- `FrameLogSaveResult`: carries exported file names and cache paths back to the host app.
+
+## Stable public API
+
+Import the package barrel:
+
+```dart
+import 'package:vsync_lab_toolkit/vsync_lab_toolkit.dart';
+```
+
+The stable barrel export is intentionally limited to:
+
+- `FrameTimingMonitor`
+- `FrameMetricsSnapshot`
+- `FrameLogExporter`
+- `FrameLogFileExporter`
+- `FrameLogSaveResult`
+
+Internal implementation details such as `FrameMetricsAggregator`,
+`FrameObservabilityLog`, and `FrameIntervalRecord` remain under `lib/src/` and
+are not part of the stable public API.
 
 ## Requirements
 
@@ -67,14 +87,6 @@ See `example/lib/main.dart` for a minimal Flutter app that:
 - starts monitoring immediately
 - shows live snapshot values
 - manually saves a frame log with one button
-
-## Public entrypoint
-
-Import the package barrel:
-
-```dart
-import 'package:vsync_lab_toolkit/vsync_lab_toolkit.dart';
-```
 
 ## Validate locally
 
