@@ -59,12 +59,14 @@ Panel export actions:
 
 - `scripts/collect_gfxinfo.ps1`
 - `scripts/collect_perfetto.ps1`
+- `scripts/analyze_frame_log.ps1`
 
 Example:
 
 ```powershell
 ./scripts/collect_gfxinfo.ps1 -PackageName com.harrypet.vsync_lab
 ./scripts/collect_perfetto.ps1 -TraceSeconds 15
+./scripts/analyze_frame_log.ps1 -Path artifacts/frame_log_animation_latest.json
 ```
 
 Artifacts are stored in `artifacts/`.
