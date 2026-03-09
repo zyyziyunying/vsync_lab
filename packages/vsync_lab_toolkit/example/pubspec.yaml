@@ -1,0 +1,20 @@
+name: vsync_lab_toolkit_example
+description: Minimal example app for vsync_lab_toolkit.
+publish_to: 'none'
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  vsync_lab_toolkit:
+    path: ../
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

@@ -1,8 +1,6 @@
 import 'package:common/common.dart';
 import 'package:flutter/material.dart';
-
-import '../metrics/frame_log_file_exporter.dart';
-import '../metrics/frame_metrics_snapshot.dart';
+import 'package:vsync_lab_toolkit/vsync_lab_toolkit.dart';
 
 class FrameMetricsPanel extends StatelessWidget {
   const FrameMetricsPanel({

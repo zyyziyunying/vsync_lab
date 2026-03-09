@@ -15,11 +15,11 @@
 
 ### 1.1 迁移核心测试到子包
 
-- [ ] 将 `test/metrics/frame_timing_monitor_test.dart` 迁移到 `packages/vsync_lab_toolkit/test/`
-- [ ] 将 `test/metrics/frame_observability_log_test.dart` 迁移到 `packages/vsync_lab_toolkit/test/`
-- [ ] 将 `test/metrics/frame_log_file_exporter_test.dart` 迁移到 `packages/vsync_lab_toolkit/test/`
-- [ ] 将测试导入改为 `package:vsync_lab_toolkit/vsync_lab_toolkit.dart`
-- [ ] 确保在 `packages/vsync_lab_toolkit/` 下执行 `flutter test` 通过
+- [x] 将 `test/metrics/frame_timing_monitor_test.dart` 迁移到 `packages/vsync_lab_toolkit/test/`
+- [x] 将 `test/metrics/frame_observability_log_test.dart` 迁移到 `packages/vsync_lab_toolkit/test/`
+- [x] 将 `test/metrics/frame_log_file_exporter_test.dart` 迁移到 `packages/vsync_lab_toolkit/test/`
+- [x] 将测试导入改为 `package:vsync_lab_toolkit/vsync_lab_toolkit.dart`
+- [x] 确保在 `packages/vsync_lab_toolkit/` 下执行 `flutter test` 通过
 
 验收标准：
 
@@ -29,9 +29,9 @@
 
 ### 1.2 让主应用直接依赖子包 API
 
-- [ ] 检查 `lib/features/` 与 `lib/widgets/` 中所有 toolkit 相关 import
-- [ ] 将主应用中对 `lib/metrics/*.dart` 的引用逐步替换为 `package:vsync_lab_toolkit/vsync_lab_toolkit.dart`
-- [ ] 评估是否保留 `lib/metrics/*.dart` 作为短期兼容层
+- [x] 检查 `lib/features/` 与 `lib/widgets/` 中所有 toolkit 相关 import
+- [x] 将主应用中对 `lib/metrics/*.dart` 的引用逐步替换为 `package:vsync_lab_toolkit/vsync_lab_toolkit.dart`
+- [x] 评估是否保留 `lib/metrics/*.dart` 作为短期兼容层
 - [ ] 若不再需要兼容层，删除 `lib/metrics/*.dart` re-export 文件
 
 验收标准：
@@ -41,10 +41,10 @@
 
 ### 1.3 补齐子包基础文档
 
-- [ ] 新增 `packages/vsync_lab_toolkit/README.md`
-- [ ] 新增 `packages/vsync_lab_toolkit/CHANGELOG.md`
-- [ ] 在子包 README 中补齐安装方式、最小接入示例、导出能力说明
-- [ ] 在子包 README 中明确 Android / Flutter 依赖前提
+- [x] 新增 `packages/vsync_lab_toolkit/README.md`
+- [x] 新增 `packages/vsync_lab_toolkit/CHANGELOG.md`
+- [x] 在子包 README 中补齐安装方式、最小接入示例、导出能力说明
+- [x] 在子包 README 中明确 Android / Flutter 依赖前提
 
 验收标准：
 
@@ -52,10 +52,10 @@
 
 ### 1.4 添加最小示例工程或示例代码
 
-- [ ] 新增 `packages/vsync_lab_toolkit/example/`
-- [ ] 示例至少展示 `FrameTimingMonitor` 的初始化与启动
-- [ ] 示例展示手动保存 frame log 的最小调用方式
-- [ ] 示例避免依赖主应用中的 `common` 和实验页面
+- [x] 新增 `packages/vsync_lab_toolkit/example/`
+- [x] 示例至少展示 `FrameTimingMonitor` 的初始化与启动
+- [x] 示例展示手动保存 frame log 的最小调用方式
+- [x] 示例避免依赖主应用中的 `common` 和实验页面
 
 验收标准：
 
@@ -197,4 +197,3 @@ flutter test
 - 这是 package 化闭环的起点
 - 也是后续敢于重构 API 的基础
 - 还能立即验证子包是否真的可以独立存在
-

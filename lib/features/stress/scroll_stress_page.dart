@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:common/common.dart';
 import 'package:flutter/material.dart';
+import 'package:vsync_lab_toolkit/vsync_lab_toolkit.dart';
 
-import '../../metrics/frame_timing_monitor.dart';
 import '../../routes/app_routes.dart';
 import '../../widgets/frame_metrics_panel.dart';
 import 'refresh_rate_parser.dart';
