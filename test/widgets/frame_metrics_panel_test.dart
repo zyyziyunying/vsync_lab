@@ -61,6 +61,55 @@ void main() {
     expect(find.text('Save frame log (3)'), findsOneWidget);
   });
 
+  testWidgets('ignores repeated taps while a manual save is in flight',
+      (tester) async {
+    final saveCompleter = Completer<FrameLogSaveResult>();
+    var saveCallCount = 0;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: FrameMetricsPanel(
+            snapshot: FrameMetricsSnapshot.empty(targetRefreshRate: 60),
+            isRunning: true,
+            onToggle: () {},
+            onReset: () {},
+            observabilityRecordCount: 3,
+            onSaveObservabilityLog: () {
+              saveCallCount++;
+              return saveCompleter.future;
+            },
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Save frame log (3)'));
+    await tester.pump();
+
+    expect(saveCallCount, 1);
+
+    await tester
+        .tap(find.widgetWithText(OutlinedButton, 'Saving frame log...'));
+    await tester.pump();
+
+    expect(saveCallCount, 1);
+
+    saveCompleter.complete(
+      const FrameLogSaveResult(
+        scenario: 'animation',
+        latestFileName: 'frame_log_animation_latest.json',
+        archivedFileName: 'frame_log_animation_20260310_120000_000000.json',
+        cacheDirectoryPath: '/tmp',
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+
+    expect(find.text('Frame log saved'), findsOneWidget);
+  });
+
   testWidgets('disables save action when monitor reports an active save',
       (tester) async {
     await tester.pumpWidget(

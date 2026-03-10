@@ -50,10 +50,11 @@ Both scenarios display live metrics from `FrameTiming` callbacks:
 - VSync miss count / max consecutive miss streak
 - UI and Raster average time
 
-Panel export actions:
+Panel actions:
 
-- `Copy JSON`: snapshot metrics for the current rolling window
-- `Copy frame log`: Phase 1 unified log (per-frame timestamp, expected interval, actual interval delta, and miss flags)
+- `Start monitor` / `Pause monitor`: control `FrameTiming` sampling
+- `Reset metrics`: clear the current rolling window and counters
+- `Save frame log`: persist the Phase 1 unified log (`scenario`, `scenarioSettings`, `snapshot`, `records`) into the app cache for later pull + analysis
 
 ## Reuse in other apps
 

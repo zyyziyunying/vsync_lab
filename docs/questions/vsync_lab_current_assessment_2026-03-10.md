@@ -11,222 +11,213 @@
 
 ## 总体结论
 
-当前工程的基础健康度是好的：
+当前工程的基础健康度是好的，而且比前一版评估时更收敛：
 
-- 根应用和子包的 `flutter analyze` 都通过
-- 根应用和子包的 `flutter test` 都通过
-- `vsync_lab_toolkit` 已经具备相对清晰的职责边界，核心监控与导出能力基本独立
+1. 根应用和子包的 `flutter analyze` 都通过
+2. 根应用和子包的 `flutter test` 都通过
+3. 之前最影响实验可信度的几个问题已经收口：
+   - refresh rate 切换后的历史数据污染
+   - frame log archive 命名冲突
+   - 保存按钮重入导致的重复交互
+   - README / docs / UI 行为漂移
+   - 子包 `build/` 忽略规则缺失
 
-但这还不等于“可以放心长期复用”。
+一句话判断：
 
-当前最突出的风险不在语法或类型层，而在：
-
-1. 运行中切换刷新率后的数据口径一致性
-2. frame log 导出归档的可靠性
-3. UI 保存动作的重入处理
-4. 文档与仓库状态脱节
-5. 仓库清洁度与独立消费能力仍不够收口
-
-一句话判断：这个工程已经是一个可运行、可测试、方向正确的实验工程，但还没有到“可稳定复用、可对外说明、可长期沉淀”的完成度。
+`vsync_lab` 现在已经是一个“可运行、可测试、实验闭环基本成立”的学习工程；当前最主要的剩余问题，不再是导出与监控语义本身，而是“根应用是否真的能独立迁出 workspace”以及“脚本/实验证据链是否继续制度化”。
 
 ## 已验证现状
 
 2026-03-10 本地检查结果：
 
 - 根目录 `flutter analyze`：通过
-- 根目录 `flutter test`：通过
+- 根目录 `flutter test`：通过，共 8 个测试
 - `packages/vsync_lab_toolkit/flutter analyze`：通过
-- `packages/vsync_lab_toolkit/flutter test`：通过
+- `packages/vsync_lab_toolkit/flutter test`：通过，共 20 个测试
 
 说明：
 
 - 当前没有明显的静态错误、空安全错误或基础测试回归
-- 问题主要集中在行为语义、边界条件、文档正确性和工程卫生上
+- 现在的问题主要集中在工程边界、实验流程维护成本，以及“独立仓库”目标尚未真正完成
 
-## 主要问题
+## 本轮核对后已关闭的问题
 
-### 1. 高优先级：切换目标刷新率会污染统计和日志语义
-
-相关位置：
-
-- `packages/vsync_lab_toolkit/lib/src/frame_timing_monitor.dart:123`
-- `packages/vsync_lab_toolkit/lib/src/frame_observability_log.dart:24`
-- `lib/features/stress/animation_stress_page.dart:143`
-- `lib/features/stress/scroll_stress_page.dart:198`
-
-现状：
-
-- 页面允许用户在监控运行过程中直接修改 target refresh rate
-- `FrameTimingMonitor.applyTargetRefreshRate()` 只更新 target refresh rate
-- 现有样本和现有 observability records 不会被清空
-
-结果：
-
-- 旧样本会按“新刷新率”重新计算 snapshot
-- 文档头部 `targetRefreshRateHz` / `frameBudgetMs` 使用新值
-- 已记录的旧 records 仍然保留采样时的 `expectedIntervalUs` 与 `targetRefreshRateHz`
-
-这会导致同一份导出日志内部出现语义不一致：
-
-- header 是新的
-- snapshot 也是新的口径
-- records 里却混着旧口径数据
-
-影响：
-
-- `jankRatio`、`vsyncMissCount`、`maxConsecutiveVsyncMiss` 可能被错误解释
-- 同一轮实验数据不再可靠
-- 后续脚本分析和人工比对都容易得出错误结论
-
-建议：
-
-- 最稳妥的做法是切换刷新率时强制 `reset()`
-- 或明确拆成“更新配置但不保留历史数据”的语义
-- 至少需要补测试覆盖“中途切换 refresh rate”的行为
-
-### 2. 中优先级：归档文件名只有秒级精度，连续保存会覆盖 archive 文件
+### 1. refresh rate 切换后的数据语义污染：已关闭
 
 相关位置：
 
-- `packages/vsync_lab_toolkit/lib/src/frame_log_file_exporter.dart:35`
-- `packages/vsync_lab_toolkit/lib/src/frame_log_file_exporter.dart:62`
+- `packages/vsync_lab_toolkit/lib/src/frame_timing_monitor.dart`
+- `packages/vsync_lab_toolkit/test/frame_timing_monitor_test.dart`
 
-现状：
+当前状态：
 
-- archived 文件名基于 `yyyyMMdd_HHmmss`
-- 同一秒内多次保存会生成相同文件名
+- `FrameTimingMonitor.applyTargetRefreshRate()` 在更新 target refresh rate 后，会清空聚合样本与 observability records
+- 对同 refresh rate 的重复应用仍保持幂等，不会无意义清空窗口
+- 已有测试覆盖：
+  - `changing refresh rate clears captured samples and records`
+  - `reapplying the same refresh rate keeps the current capture window`
 
-触发场景：
+结论：
 
-- 用户连续点击 `Save frame log`
-- 自动保存与手动保存碰巧发生在同一秒
+- 旧评估中“切换 refresh rate 会混入旧口径数据”的判断已经不成立
+- 这项问题不再是当前主风险
 
-影响：
-
-- 所谓 archive 文件并不真正可靠
-- 同一秒内的早先结果会被后一次写入覆盖
-- 对实验留痕和回归比对非常不利
-
-建议：
-
-- 文件名加入毫秒或递增序号
-- 或在写入前检测冲突并追加去重后缀
-
-### 3. 中优先级：保存动作没有按“正在保存”状态禁用，存在 UI 重入
+### 2. frame log archive 命名冲突：已关闭
 
 相关位置：
 
-- `lib/widgets/frame_metrics_panel.dart:96`
-- `packages/vsync_lab_toolkit/lib/src/frame_timing_monitor.dart:161`
+- `packages/vsync_lab_toolkit/lib/src/frame_log_file_exporter.dart`
+- `packages/vsync_lab_toolkit/test/frame_log_file_exporter_test.dart`
 
-现状：
+当前状态：
 
-- monitor 内部会复用同一个 pending save future
-- 但面板按钮没有基于 saving 状态做禁用
+- archived 文件名已包含毫秒和微秒
+- 如果同一时间戳下仍发生冲突，会追加递增后缀
+- 已有测试覆盖同一时间戳连续保存时的唯一性
 
-结果：
+结论：
 
-- 用户连续点击时，不会重复写文件多次
-- 但会有多个调用同时等待同一个 future 完成
-- 保存完成后，可能连续弹出多个相同的成功对话框
+- 旧评估中“archive 文件只有秒级精度、同一秒会覆盖”的判断已经不成立
+- 当前导出归档可靠性达到可接受水平
 
-影响：
-
-- 交互体验差
-- 用户容易误认为保存逻辑异常
-- 也会增加后续维护时对“是否真正只保存了一次”的误判成本
-
-建议：
-
-- 将 `isSavingObservabilityLog` 传到面板层
-- 保存中禁用按钮，或改为显示 loading 状态
-
-### 4. 中优先级：根应用还不具备真正独立消费形态
+### 3. UI 保存动作重入：已关闭
 
 相关位置：
 
-- `pubspec.yaml:24`
-- `pubspec.yaml:36`
-- `README.md:194`
+- `lib/widgets/frame_metrics_panel.dart`
+- `test/widgets/frame_metrics_panel_test.dart`
 
-现状：
+当前状态：
 
-- 根应用依赖 `resolution: workspace`
-- 直接依赖工作区内的 `common`
-- README 同时又把它描述成独立仓库 / submodule 形态
+- 面板按钮已根据保存状态显示 `Saving frame log...`
+- 保存中按钮会被禁用
+- 已补充“重复点击保存按钮仅触发一次保存”的 widget test
 
-这说明两件事：
+结论：
 
-- `packages/vsync_lab_toolkit` 的复用边界已经初步建立
-- 但根应用 `vsync_lab` 自身仍然强依赖上层工作区环境
+- 旧评估中“按钮未按 saving 状态禁用、可能弹出多个成功对话框”的判断已经不再适用
+- UI 层与 monitor 层的 pending save 语义现在是一致的
 
-影响：
-
-- 仓库迁出或独立初始化时并不自洽
-- 文档会让读者误判当前工程的独立性
-- 这会增加后续 package 化和 submodule 化的摩擦
-
-建议：
-
-- 明确区分“根应用实验壳”和“可复用 toolkit”
-- 如果根应用要独立存在，就移除对 workspace `common` 的强依赖
-- 如果短期不做，就在 README 里明确说明当前仍依赖 workspace 环境
-
-### 5. 低优先级：子包 `build/` 产物被提交，仓库清洁度较差
+### 4. README / docs / UI 行为不一致：已关闭
 
 相关位置：
 
-- `.gitignore:33`
-- `packages/vsync_lab_toolkit/build/...`
+- `README.md`
+- `docs/README.md`
+- `docs/device_matrix.md`
+- `docs/experiment_log_template.md`
+- `test/docs/documentation_consistency_test.dart`
 
-现状：
+当前状态：
 
-- 当前 `.gitignore` 只忽略根级 `/build/`
-- 子包目录下的 `build/` 没有被忽略
-- 因此已有生成物进入版本控制
+- 根 README 已改为真实面板行为：`Start/Pause monitor`、`Reset metrics`、`Save frame log`
+- 缺失文档 `docs/device_matrix.md` 与 `docs/experiment_log_template.md` 已补回
+- 新增文档一致性测试，至少能阻止常见文案漂移再次发生
 
-影响：
+结论：
 
-- review 噪音增加
-- 跨平台差异文件容易被误提交
-- 仓库可读性和可维护性下降
+- 旧评估中“README 与 docs 引用失效、UI 描述过期”的判断已经不成立
+- 实验流程文档已具备最小闭环
 
-建议：
-
-- 将规则改成 `**/build/` 或补充对子包 `build/` 的忽略
-- 清理已提交的生成文件
-
-### 6. 低优先级：README 与实际实现、文档目录不一致
+### 5. 子包 `build/` 忽略规则缺失：已关闭
 
 相关位置：
 
-- `README.md:53`
-- `README.md:189`
-- `docs/README.md:138`
-- `lib/widgets/frame_metrics_panel.dart:96`
+- `.gitignore`
+
+当前状态：
+
+- 当前 `.gitignore` 已使用 `**/build/`
+- `git ls-files "packages/*/build/*"` 结果为空，说明子包生成物未被版本控制
+
+结论：
+
+- 旧评估中“子包 build 产物被提交”的判断与当前仓库状态不符
+- 仓库清洁度问题在这一项上已经收口
+
+## 当前仍需关注的问题
+
+### 1. 中优先级：根应用仍依赖 workspace 环境，尚未真正具备独立仓库形态
+
+相关位置：
+
+- `pubspec.yaml`
+- `README.md`
+- `lib/widgets/frame_metrics_panel.dart`
 
 现状：
 
-- 根 README 仍描述 `Copy JSON` / `Copy frame log`
-- 当前实际 UI 只有 `Save frame log`
-- README 与 docs 还引用了仓库中不存在的 `docs/device_matrix.md`、`docs/experiment_log_template.md`
+- 根应用仍使用 `resolution: workspace`
+- 仍直接依赖工作区内的 `common`
+- README 虽然已经比之前更诚实，但仍保留“独立仓库 / submodule”方向的表述
 
 影响：
 
-- 新接手的人会被误导
-- 实验流程文档无法闭环
-- 会削弱这个项目作为“学习仓库”的可信度
+- `vsync_lab` 作为根应用，当前仍不能脱离上层 workspace 直接迁出
+- 读者容易把“toolkit 已可复用”误解成“整个 app 已完全独立”
+- 如果后续真的要做 submodule 或单仓迁移，这部分仍然会成为摩擦点
 
 建议：
 
-- 统一 README、docs 和当前 UI 行为
-- 删除失效引用，或把缺失文档补回
+1. 明确区分“实验壳 app”和“可复用 toolkit”
+2. 如果根应用要独立存在，就移除对 workspace `common` 的强依赖
+3. 如果短期不做迁移，就继续在 README 中明确当前需要 workspace 环境
+
+### 2. 中优先级：脚本流程仍缺少自动化验证，实验采集链条主要靠人工回归
+
+相关位置：
+
+- `scripts/analyze_frame_log.ps1`
+- `scripts/pull_and_analyze_frame_log.ps1`
+- `scripts/collect_gfxinfo.ps1`
+- `scripts/collect_perfetto.ps1`
+
+现状：
+
+- Dart 侧核心监控、导出、UI 交互已有较完整测试
+- PowerShell 采集与分析脚本仍没有自动化测试或基于样例工件的 smoke check
+
+影响：
+
+- 一旦 `adb` 输出、文件路径或脚本参数约定变化，回归风险更依赖人工发现
+- 这类问题不会被 `flutter test` 捕获，但会直接影响真实实验流程
+
+建议：
+
+1. 至少为 `analyze_frame_log.ps1` 增加基于固定样例 JSON 的 smoke check
+2. 为 `pull_and_analyze_frame_log.ps1` 补一层命令拼接或参数分支测试
+3. 设备采集脚本可以先从“命令构造正确性”做最小验证，不必一步到位做真机自动化
+
+### 3. 低优先级：实验文档模板已补齐，但真实设备基线与样例证据仍待填充
+
+相关位置：
+
+- `docs/device_matrix.md`
+- `docs/experiment_log_template.md`
+- `artifacts/`
+
+现状：
+
+- 文档模板已经补回，流程上不再断链
+- 但 `device_matrix.md` 里的设备信息仍以 `TBD` 为主
+- 仓库中也还没有一套被明确引用的示例实验记录
+
+影响：
+
+- 方法论框架已经具备，但“真实设备证据库”还没有形成
+- 对后续 A/B 对比、知识沉淀和新成员接手帮助有限
+
+建议：
+
+1. 下一轮真机实验后，优先把至少 1 台 RK3566 或 A133 设备信息补完整
+2. 产出 1 份完整实验记录，作为模板实例
+3. 只在确有必要时提交 `artifacts/` 原始证据，避免仓库噪音
 
 ## 当前做得好的地方
 
-### 1. toolkit 职责边界已经开始清晰
+### 1. toolkit 职责边界已经比较清晰
 
-`packages/vsync_lab_toolkit` 当前已经把这些核心能力收进去：
+`packages/vsync_lab_toolkit` 当前已经收口了核心监控与导出能力：
 
 - `FrameTimingMonitor`
 - `FrameMetricsSnapshot`
@@ -234,52 +225,70 @@
 - `FrameLogFileExporter`
 - `FrameLogSaveResult`
 
-这说明核心方向是对的：主应用负责实验场景和展示，toolkit 负责观测与导出核心。
+这说明主应用负责实验场景和展示，toolkit 负责观测与导出核心的方向是对的。
 
-### 2. 核心逻辑已具备不错的可测试性
+### 2. 核心逻辑具备不错的可测试性
 
-当前聚合器、日志构建器和 monitor 已经有独立测试覆盖，说明：
+当前聚合器、日志构建器、monitor、文件导出器和关键 UI 交互都已有独立测试覆盖，说明：
 
 - 不是只能靠手工跑 UI 才能验证
-- 关键聚合逻辑已经具备重构基础
+- 核心逻辑已经具备持续重构的基础
+- 现在新增回归守卫的成本是可控的
 
-### 3. 子包 API 面已经比早期更收敛
+### 3. 文档闭环比前一版明显更完整
 
-当前 barrel export 有意识地只暴露稳定 API，而把内部实现留在 `lib/src/`，这是正确方向。
+当前已经具备：
 
-## 测试与覆盖缺口
+- 根 README
+- `docs/README.md`
+- `docs/device_matrix.md`
+- `docs/experiment_log_template.md`
+- 文档一致性测试
 
-虽然现有测试都通过，但还缺少几类关键场景：
+这让项目作为“学习仓库”的说明性和可交接性明显好于前一版状态。
 
-1. 缺少“监控中途切换 refresh rate”后的行为测试
-2. 缺少“同一秒连续保存”是否覆盖 archive 文件的测试
-3. 缺少 UI 层“重复点击保存按钮”的行为测试
-4. 缺少 README / docs 所描述流程与当前实现之间的一致性检查
+## 测试与覆盖状态
 
-这类缺口的共同点是：
+当前已覆盖的关键场景：
 
-- 单元测试不容易直接暴露
-- 但真实使用和实验数据会直接受影响
+1. refresh rate 切换后清空旧样本与旧 records
+2. 同 refresh rate 重复应用不清空当前窗口
+3. frame log 自动保存与 reset 后重新 arm
+4. 同一时间戳连续保存时 archive 文件名唯一
+5. 保存按钮 saving 态禁用
+6. 重复点击保存按钮仅触发一次保存
+7. README / docs / 当前 UI 文案一致性检查
+
+仍未自动化覆盖的区域：
+
+1. PowerShell 脚本的端到端采集链条
+2. 真机 `adb` / Perfetto 环境差异带来的行为分歧
+3. 真实设备实验记录的长期积累与回归对比
 
 ## 建议优先级
 
-建议按下面顺序处理：
+建议按下面顺序继续推进：
 
-1. 先修复 refresh rate 切换后的数据一致性
-2. 再修复 frame log archive 命名冲突
-3. 给保存按钮加 saving 态，消除 UI 重入
-4. 清理子包 `build/` 产物与 `.gitignore`
-5. 修正文档，使 README、docs、UI、脚本描述一致
-6. 再考虑根应用是否真的要脱离 workspace 成为独立仓库
+1. 先明确根应用是否真的要脱离 workspace 成为独立仓库
+2. 再为 PowerShell 脚本补最小 smoke check，降低实验流程回归风险
+3. 把设备矩阵和至少 1 份真实实验记录补完整，形成证据样板
+4. 之后再考虑依赖升级、更多实验页面或更复杂的观测能力
 
 ## 最终判断
 
-`vsync_lab` 当前不是一个“有明显质量问题”的工程，相反，它的基础结构、测试意识和拆包方向都不错。
+`vsync_lab` 当前不是一个“问题很多、质量不稳”的工程，相反，它的主干质量已经达到了一个比较可信的阶段。
 
-真正的问题是：
+和旧评估相比，最大的变化是：
 
-- 数据语义的一致性还不够稳
-- 工程边界和文档边界没有完全收口
-- 一些会影响实验可信度的细节还没打磨完
+- 数据语义一致性问题已修复
+- 导出归档可靠性已修复
+- UI 保存重入已修复
+- 文档目录与实现已对齐
+- 基础测试覆盖已经比之前更完整
 
-如果继续推进，这个项目最需要的不是加更多实验页面，而是先把“数据可信、导出可靠、文档准确、仓库干净”这四件事做实。
+当前真正剩下的，不是核心逻辑 correctness，而是两个更工程化的问题：
+
+1. 根应用边界是否要继续依赖 workspace
+2. 实验脚本与设备证据链如何长期维护
+
+如果继续推进，这个项目下一阶段最需要的不是再加很多实验页面，而是把“独立边界”和“实验证据链”这两件事做实。
