@@ -219,13 +219,15 @@
 
 `packages/vsync_lab_toolkit` 当前已经收口了核心监控与导出能力：
 
+- `FrameMetricsRecorder`
+- `FrameSample`
 - `FrameTimingMonitor`
 - `FrameMetricsSnapshot`
 - `FrameLogExporter`
 - `FrameLogFileExporter`
 - `FrameLogSaveResult`
 
-这说明主应用负责实验场景和展示，toolkit 负责观测与导出核心的方向是对的。
+这说明主应用负责实验场景和展示，toolkit 负责观测与导出核心的方向是对的；其中 `FrameMetricsRecorder` 进一步把 plain-sample 驱动的核心能力提到了稳定公共入口，`FrameTimingMonitor` 则更明确地回到 Flutter 集成层角色。
 
 ### 2. 核心逻辑具备不错的可测试性
 

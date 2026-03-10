@@ -219,7 +219,8 @@
 
 这里不只是“少 export 一些文件”，而是要明确谁属于长期维护承诺，谁只是内部实现：
 
-- 建议稳定公共 API 仅包含：`FrameTimingMonitor`、`FrameMetricsSnapshot`、`FrameLogExporter`、`FrameLogFileExporter`、`FrameLogSaveResult`
+- 按 2026-03-09 当日的保守收口思路，建议稳定公共 API 先仅包含：`FrameTimingMonitor`、`FrameMetricsSnapshot`、`FrameLogExporter`、`FrameLogFileExporter`、`FrameLogSaveResult`
+- 若后续目标进一步明确为“通用监控工具包”，则可以把 plain-sample 入口提升为稳定公共 API，例如新增 `FrameMetricsRecorder` 与 `FrameSample`
 - `FrameMetricsAggregator`、`FrameObservabilityLog`、记录结构、参数校验 helper、`FrameTiming` 适配层等都应视为 `lib/src/` 内部实现
 - 包内测试可以继续直接覆盖内部实现，但仓库外消费方不应被鼓励依赖这些内部类型
 

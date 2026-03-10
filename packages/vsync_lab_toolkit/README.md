@@ -4,7 +4,9 @@ Reusable Flutter frame timing monitoring and frame-log exporting extracted from 
 
 ## What it provides
 
+- `FrameMetricsRecorder`: source-agnostic rolling metrics and observability-log capture from plain sample data.
 - `FrameTimingMonitor`: listens to `FrameTiming`, aggregates rolling metrics, and manages frame-log capture.
+- `FrameSample`: immutable frame sample input for recorder-based integrations.
 - `FrameMetricsSnapshot`: immutable summary of the current rolling window.
 - `FrameLogExporter` and `FrameLogFileExporter`: save unified logs to app cache.
 - `FrameLogSaveResult`: carries exported file names and cache paths back to the host app.
@@ -19,7 +21,9 @@ import 'package:vsync_lab_toolkit/vsync_lab_toolkit.dart';
 
 The stable barrel export is intentionally limited to:
 
+- `FrameMetricsRecorder`
 - `FrameTimingMonitor`
+- `FrameSample`
 - `FrameMetricsSnapshot`
 - `FrameLogExporter`
 - `FrameLogFileExporter`
@@ -35,7 +39,7 @@ are not part of the stable public API.
 - Android-focused workflow today
 - Flutter SDK compatible with Dart `^3.11.0`
 
-Core aggregation and observability logic operate on plain sample data so they can be exercised without real Flutter frame callbacks. Flutter runtime APIs such as `WidgetsBinding` and `FrameTiming` are now confined to the monitor's integration layer, so the package remains intended for Flutter apps while keeping its core logic easier to test.
+Core aggregation and observability logic operate on plain sample data so they can be exercised without real Flutter frame callbacks. `FrameMetricsRecorder` is the reusable core entry point; Flutter runtime APIs such as `WidgetsBinding` and `FrameTiming` stay in `FrameTimingMonitor`, which now acts as a Flutter integration layer on top of the recorder.
 
 ## Install
 
@@ -79,6 +83,38 @@ Release and tag workflow: see `docs/package_tag_release.md` in the repository ro
 
 ## Minimal integration
 
+Use `FrameMetricsRecorder` when your app or tooling already has frame samples and you want the package to stay source-agnostic:
+
+```dart
+import 'package:vsync_lab_toolkit/vsync_lab_toolkit.dart';
+
+final recorder = FrameMetricsRecorder(targetRefreshRate: 120);
+
+recorder.addFrameSamples(const <FrameSample>[
+  FrameSample(
+    frameEndUs: 1000000,
+    buildUs: 3000,
+    rasterUs: 2000,
+    totalUs: 7000,
+  ),
+  FrameSample(
+    frameEndUs: 1008333,
+    buildUs: 3200,
+    rasterUs: 2100,
+    totalUs: 7200,
+  ),
+]);
+
+final log = recorder.buildObservabilityLog(
+  scenario: 'home_feed',
+  scenarioSettings: <String, Object?>{
+    'entry': 'feed_tab',
+  },
+);
+```
+
+Use `FrameTimingMonitor` when you want the package to subscribe to Flutter frame timings for you:
+
 ```dart
 import 'package:vsync_lab_toolkit/vsync_lab_toolkit.dart';
 
@@ -93,7 +129,7 @@ final monitor = FrameTimingMonitor(
 monitor.start();
 ```
 
-Manual frame-log save:
+Manual frame-log save from the monitor:
 
 ```dart
 final result = await monitor.saveObservabilityLog();
@@ -119,6 +155,8 @@ See `example/lib/main.dart` for a minimal Flutter app that:
 - starts monitoring immediately
 - shows live snapshot values
 - manually saves a frame log with one button
+
+For non-`WidgetsBinding` integrations, prefer `FrameMetricsRecorder` directly and wire exported logs into your own persistence flow.
 
 ## Validate locally
 

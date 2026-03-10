@@ -4,10 +4,10 @@ import 'dart:ui';
 import 'package:flutter/widgets.dart';
 
 import 'argument_validation.dart';
+import 'frame_log_exporter.dart';
 import 'frame_log_file_exporter.dart';
-import 'frame_metrics_aggregator.dart';
+import 'frame_metrics_recorder.dart';
 import 'frame_metrics_snapshot.dart';
-import 'frame_observability_log.dart';
 import 'frame_sample.dart';
 import 'frame_timing_adapter.dart';
 
@@ -48,23 +48,17 @@ class FrameTimingMonitor extends ChangeNotifier {
     required ValueChanged<FrameLogSaveResult>? onFrameLogSaved,
     required void Function(Object error, StackTrace stackTrace)?
         onFrameLogSaveError,
-  })  : _aggregator = FrameMetricsAggregator(
+  })  : _recorder = FrameMetricsRecorder(
           targetRefreshRate: targetRefreshRate,
           maxSamples: maxSamples,
-        ),
-        _observabilityLog = FrameObservabilityLog(
-          targetRefreshRate: targetRefreshRate,
-          maxRecords: maxLogRecords,
+          maxLogRecords: maxLogRecords,
         ),
         _exporter = exporter,
         _scenarioSettingsBuilder = scenarioSettingsBuilder,
         _onFrameLogSaved = onFrameLogSaved,
-        _onFrameLogSaveError = onFrameLogSaveError,
-        _snapshot =
-            FrameMetricsSnapshot.empty(targetRefreshRate: targetRefreshRate);
+        _onFrameLogSaveError = onFrameLogSaveError;
 
-  final FrameMetricsAggregator _aggregator;
-  final FrameObservabilityLog _observabilityLog;
+  final FrameMetricsRecorder _recorder;
   final FrameLogExporter _exporter;
   final Map<String, Object?> Function()? _scenarioSettingsBuilder;
   final ValueChanged<FrameLogSaveResult>? _onFrameLogSaved;
@@ -74,7 +68,6 @@ class FrameTimingMonitor extends ChangeNotifier {
   final String scenario;
   final bool autoSaveOnBufferFull;
 
-  FrameMetricsSnapshot _snapshot;
   bool _running = false;
   bool _isSavingObservabilityLog = false;
   bool _hasAutoSavedCurrentBuffer = false;
@@ -83,11 +76,11 @@ class FrameTimingMonitor extends ChangeNotifier {
   Object? _lastFrameLogSaveError;
   Future<FrameLogSaveResult>? _pendingSave;
 
-  FrameMetricsSnapshot get snapshot => _snapshot;
+  FrameMetricsSnapshot get snapshot => _recorder.snapshot;
   bool get isRunning => _running;
-  double get targetRefreshRate => _aggregator.targetRefreshRate;
-  int get observabilityRecordCount => _observabilityLog.recordCount;
-  bool get isObservabilityLogFull => _observabilityLog.isFull;
+  double get targetRefreshRate => _recorder.targetRefreshRate;
+  int get observabilityRecordCount => _recorder.observabilityRecordCount;
+  bool get isObservabilityLogFull => _recorder.isObservabilityLogFull;
   bool get isSavingObservabilityLog => _isSavingObservabilityLog;
   bool get hasAutoSavedCurrentBuffer => _hasAutoSavedCurrentBuffer;
   FrameLogSaveResult? get lastFrameLogSaveResult => _lastFrameLogSaveResult;
@@ -112,7 +105,8 @@ class FrameTimingMonitor extends ChangeNotifier {
   }
 
   void reset() {
-    _clearCapturedData(targetRefreshRate: targetRefreshRate);
+    _recorder.reset();
+    _resetCaptureBufferState();
     notifyListeners();
   }
 
@@ -122,9 +116,8 @@ class FrameTimingMonitor extends ChangeNotifier {
       return;
     }
 
-    _aggregator.updateTargetRefreshRate(validatedHz);
-    _observabilityLog.updateTargetRefreshRate(validatedHz);
-    _clearCapturedData(targetRefreshRate: validatedHz);
+    _recorder.applyTargetRefreshRate(validatedHz);
+    _resetCaptureBufferState();
     notifyListeners();
   }
 
@@ -132,8 +125,7 @@ class FrameTimingMonitor extends ChangeNotifier {
     String? scenario,
     Map<String, Object?>? scenarioSettings,
   }) {
-    return _observabilityLog.buildUnifiedLog(
-      snapshot: _snapshot,
+    return _recorder.buildObservabilityLog(
       scenario: scenario ?? this.scenario,
       scenarioSettings: scenarioSettings ?? _scenarioSettingsBuilder?.call(),
     );
@@ -216,46 +208,33 @@ class FrameTimingMonitor extends ChangeNotifier {
   }
 
   void _onTimings(List<FrameTiming> timings) {
-    for (final sample in frameSamplesFromFrameTimings(timings)) {
-      _recordFrameSample(sample);
+    final samples = frameSamplesFromFrameTimings(timings);
+    if (samples.isEmpty) {
+      return;
     }
+
+    _recorder.addFrameSamples(samples);
     _finishRecordingBatch();
   }
 
   void _recordFrameSample(FrameSample sample) {
-    _aggregator.addSample(
-      frameEndUs: sample.frameEndUs,
-      buildUs: sample.buildUs,
-      rasterUs: sample.rasterUs,
-      totalUs: sample.totalUs,
-    );
-    _observabilityLog.addSample(
-      frameEndUs: sample.frameEndUs,
-      buildUs: sample.buildUs,
-      rasterUs: sample.rasterUs,
-      totalUs: sample.totalUs,
-    );
+    _recorder.addFrameSample(sample);
   }
 
   void _finishRecordingBatch() {
-    _snapshot = _aggregator.snapshot();
     notifyListeners();
     _maybeAutoSaveObservabilityLog();
   }
 
-  void _clearCapturedData({required double targetRefreshRate}) {
-    _aggregator.clear();
-    _observabilityLog.clear();
+  void _resetCaptureBufferState() {
     _bufferEpoch++;
     _hasAutoSavedCurrentBuffer = false;
     _lastFrameLogSaveError = null;
-    _snapshot =
-        FrameMetricsSnapshot.empty(targetRefreshRate: targetRefreshRate);
   }
 
   void _maybeAutoSaveObservabilityLog() {
     if (!autoSaveOnBufferFull ||
-        !_observabilityLog.isFull ||
+        !_recorder.isObservabilityLogFull ||
         _hasAutoSavedCurrentBuffer ||
         _pendingSave != null) {
       return;

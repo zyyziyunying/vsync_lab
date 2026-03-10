@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add `FrameMetricsRecorder` as a stable plain-sample entry point.
+- Add `FrameSample` to the stable public API for source-agnostic integrations.
+- Refactor `FrameTimingMonitor` into a thinner Flutter integration layer on top of the recorder.
 - Remove repo-specific `adb` pull command generation from `FrameLogSaveResult`.
 - Keep `FrameLogSaveResult` focused on exported file names and paths.
 - Narrow the barrel export to stable host-app APIs only.

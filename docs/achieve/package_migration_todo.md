@@ -93,7 +93,12 @@
 - [x] 仅导出稳定且希望长期维护的类型
 - [x] 记录暂不公开的内部能力
 
-当前稳定公共 API：`FrameTimingMonitor`、`FrameMetricsSnapshot`、`FrameLogExporter`、`FrameLogFileExporter`、`FrameLogSaveResult`
+当前稳定公共 API：`FrameMetricsRecorder`、`FrameSample`、`FrameTimingMonitor`、`FrameMetricsSnapshot`、`FrameLogExporter`、`FrameLogFileExporter`、`FrameLogSaveResult`
+
+其中：
+
+- `FrameMetricsRecorder` 作为 plain-sample 驱动的核心入口，面向更通用的监控接入场景
+- `FrameTimingMonitor` 作为 Flutter 集成层，负责 `WidgetsBinding` / `FrameTiming` 订阅与自动保存工作流
 
 暂不公开的内部能力：`FrameMetricsAggregator`、`FrameObservabilityLog`、`FrameIntervalRecord`
 
