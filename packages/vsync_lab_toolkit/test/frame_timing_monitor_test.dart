@@ -84,6 +84,88 @@ void main() {
     expect(monitor.lastFrameLogSaveResult?.scenario, 'scroll');
   });
 
+  test('changing refresh rate clears captured samples and records', () {
+    final monitor = FrameTimingMonitor(
+      targetRefreshRate: 60,
+      maxLogRecords: 4,
+      scenario: 'animation',
+    );
+
+    monitor.addSample(
+      frameEndUs: 1000000,
+      buildUs: 3000,
+      rasterUs: 2000,
+      totalUs: 7000,
+    );
+    monitor.addSample(
+      frameEndUs: 1016667,
+      buildUs: 4000,
+      rasterUs: 2500,
+      totalUs: 17000,
+    );
+
+    expect(monitor.snapshot.sampleCount, 2);
+    expect(monitor.observabilityRecordCount, 2);
+
+    monitor.applyTargetRefreshRate(120);
+
+    expect(monitor.targetRefreshRate, 120);
+    expect(monitor.snapshot.sampleCount, 0);
+    expect(monitor.snapshot.targetRefreshRate, 120);
+    expect(monitor.snapshot.frameBudgetMs, closeTo(8.3333333333, 0.000001));
+    expect(monitor.observabilityRecordCount, 0);
+
+    final emptyLog = monitor.buildObservabilityLog();
+    expect(emptyLog['targetRefreshRateHz'], 120);
+    expect(emptyLog['recordCount'], 0);
+
+    monitor.addSample(
+      frameEndUs: 2000000,
+      buildUs: 3000,
+      rasterUs: 2000,
+      totalUs: 7000,
+    );
+    monitor.addSample(
+      frameEndUs: 2008333,
+      buildUs: 3200,
+      rasterUs: 2100,
+      totalUs: 7100,
+    );
+
+    final data = monitor.buildObservabilityLog();
+    final records =
+        (data['records'] as List<dynamic>).cast<Map<String, Object?>>();
+
+    expect(data['targetRefreshRateHz'], 120);
+    expect(data['recordCount'], 2);
+    expect(records.first['targetRefreshRateHz'], 120);
+    expect(records.last['expectedIntervalUs'], 8333);
+    expect(records.last['actualIntervalUs'], 8333);
+  });
+
+  test('reapplying the same refresh rate keeps the current capture window', () {
+    final monitor = FrameTimingMonitor(targetRefreshRate: 60);
+
+    monitor.addSample(
+      frameEndUs: 1000000,
+      buildUs: 3000,
+      rasterUs: 2000,
+      totalUs: 7000,
+    );
+    monitor.addSample(
+      frameEndUs: 1016667,
+      buildUs: 4000,
+      rasterUs: 2500,
+      totalUs: 17000,
+    );
+
+    monitor.applyTargetRefreshRate(60);
+
+    expect(monitor.targetRefreshRate, 60);
+    expect(monitor.snapshot.sampleCount, 2);
+    expect(monitor.observabilityRecordCount, 2);
+  });
+
   test('resets saving state when manual log build fails validation', () async {
     Object? callbackError;
     StackTrace? callbackStackTrace;

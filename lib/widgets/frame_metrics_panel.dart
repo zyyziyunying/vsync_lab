@@ -4,7 +4,7 @@ import 'package:vsync_lab_toolkit/vsync_lab_toolkit.dart';
 
 import '../metrics/frame_log_pull_command.dart';
 
-class FrameMetricsPanel extends StatelessWidget {
+class FrameMetricsPanel extends StatefulWidget {
   const FrameMetricsPanel({
     required this.snapshot,
     required this.isRunning,
@@ -12,6 +12,7 @@ class FrameMetricsPanel extends StatelessWidget {
     required this.onReset,
     this.onSaveObservabilityLog,
     this.observabilityRecordCount = 0,
+    this.isSavingObservabilityLog = false,
     super.key,
   });
 
@@ -21,9 +22,21 @@ class FrameMetricsPanel extends StatelessWidget {
   final VoidCallback onReset;
   final Future<FrameLogSaveResult> Function()? onSaveObservabilityLog;
   final int observabilityRecordCount;
+  final bool isSavingObservabilityLog;
+
+  @override
+  State<FrameMetricsPanel> createState() => _FrameMetricsPanelState();
+}
+
+class _FrameMetricsPanelState extends State<FrameMetricsPanel> {
+  bool _isSaveActionInFlight = false;
+
+  bool get _isSaveBusy =>
+      widget.isSavingObservabilityLog || _isSaveActionInFlight;
 
   @override
   Widget build(BuildContext context) {
+    final snapshot = widget.snapshot;
     final generatedAt = snapshot.generatedAt;
     final generatedAtText =
         '${generatedAt.toYmd()} ${_twoDigits(generatedAt.hour)}:${_twoDigits(generatedAt.minute)}:${_twoDigits(generatedAt.second)}';
@@ -84,21 +97,33 @@ class FrameMetricsPanel extends StatelessWidget {
             runSpacing: 8,
             children: [
               FilledButton.icon(
-                onPressed: onToggle,
-                icon: Icon(isRunning ? Icons.pause : Icons.play_arrow),
-                label: Text(isRunning ? 'Pause monitor' : 'Start monitor'),
+                onPressed: widget.onToggle,
+                icon: Icon(widget.isRunning ? Icons.pause : Icons.play_arrow),
+                label: Text(
+                  widget.isRunning ? 'Pause monitor' : 'Start monitor',
+                ),
               ),
               OutlinedButton.icon(
-                onPressed: onReset,
+                onPressed: widget.onReset,
                 icon: const Icon(Icons.replay),
                 label: const Text('Reset metrics'),
               ),
               OutlinedButton.icon(
-                onPressed: onSaveObservabilityLog == null
+                onPressed: widget.onSaveObservabilityLog == null || _isSaveBusy
                     ? null
                     : () => _saveObservabilityLog(context),
-                icon: const Icon(Icons.save_alt),
-                label: Text('Save frame log ($observabilityRecordCount)'),
+                icon: _isSaveBusy
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.save_alt),
+                label: Text(
+                  _isSaveBusy
+                      ? 'Saving frame log...'
+                      : 'Save frame log (${widget.observabilityRecordCount})',
+                ),
               ),
             ],
           ),
@@ -108,10 +133,14 @@ class FrameMetricsPanel extends StatelessWidget {
   }
 
   Future<void> _saveObservabilityLog(BuildContext context) async {
-    final saver = onSaveObservabilityLog;
-    if (saver == null) {
+    final saver = widget.onSaveObservabilityLog;
+    if (saver == null || _isSaveBusy) {
       return;
     }
+
+    setState(() {
+      _isSaveActionInFlight = true;
+    });
 
     try {
       final result = await saver();
@@ -163,6 +192,12 @@ class FrameMetricsPanel extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to save frame log: $error')),
       );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaveActionInFlight = false;
+        });
+      }
     }
   }
 

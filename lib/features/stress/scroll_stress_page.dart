@@ -73,6 +73,7 @@ class _ScrollStressPageState extends State<ScrollStressPage> {
             _monitor.start();
           },
           onReset: _monitor.reset,
+          isSavingObservabilityLog: _monitor.isSavingObservabilityLog,
           observabilityRecordCount: _monitor.observabilityRecordCount,
           onSaveObservabilityLog: () => _monitor.saveObservabilityLog(),
         );
@@ -206,7 +207,11 @@ class _ScrollStressPageState extends State<ScrollStressPage> {
 
     _monitor.applyTargetRefreshRate(parsed.data!);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Target refresh rate set to ${parsed.data} Hz')),
+      SnackBar(
+        content: Text(
+          'Target refresh rate set to ${parsed.data} Hz. Metrics reset.',
+        ),
+      ),
     );
   }
 }

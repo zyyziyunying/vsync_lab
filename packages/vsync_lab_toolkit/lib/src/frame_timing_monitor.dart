@@ -78,6 +78,7 @@ class FrameTimingMonitor extends ChangeNotifier {
   bool _running = false;
   bool _isSavingObservabilityLog = false;
   bool _hasAutoSavedCurrentBuffer = false;
+  int _bufferEpoch = 0;
   FrameLogSaveResult? _lastFrameLogSaveResult;
   Object? _lastFrameLogSaveError;
   Future<FrameLogSaveResult>? _pendingSave;
@@ -111,23 +112,19 @@ class FrameTimingMonitor extends ChangeNotifier {
   }
 
   void reset() {
-    _aggregator.clear();
-    _observabilityLog.clear();
-    _hasAutoSavedCurrentBuffer = false;
-    _lastFrameLogSaveError = null;
-    _snapshot =
-        FrameMetricsSnapshot.empty(targetRefreshRate: targetRefreshRate);
+    _clearCapturedData(targetRefreshRate: targetRefreshRate);
     notifyListeners();
   }
 
   void applyTargetRefreshRate(double hz) {
     final validatedHz = validateTargetRefreshRate(hz);
+    if (validatedHz == targetRefreshRate) {
+      return;
+    }
 
     _aggregator.updateTargetRefreshRate(validatedHz);
     _observabilityLog.updateTargetRefreshRate(validatedHz);
-    _snapshot = _aggregator.sampleCount < 2
-        ? FrameMetricsSnapshot.empty(targetRefreshRate: validatedHz)
-        : _aggregator.snapshot();
+    _clearCapturedData(targetRefreshRate: validatedHz);
     notifyListeners();
   }
 
@@ -167,6 +164,7 @@ class FrameTimingMonitor extends ChangeNotifier {
     _lastFrameLogSaveError = null;
     notifyListeners();
 
+    final saveBufferEpoch = _bufferEpoch;
     final saveFuture = Future<FrameLogSaveResult>.sync(() {
       return _exporter.save(
         buildObservabilityLog(
@@ -176,7 +174,7 @@ class FrameTimingMonitor extends ChangeNotifier {
       );
     }).then((result) {
       _lastFrameLogSaveResult = result;
-      if (markAutoSaved) {
+      if (markAutoSaved && saveBufferEpoch == _bufferEpoch) {
         _hasAutoSavedCurrentBuffer = true;
       }
       _onFrameLogSaved?.call(result);
@@ -243,6 +241,16 @@ class FrameTimingMonitor extends ChangeNotifier {
     _snapshot = _aggregator.snapshot();
     notifyListeners();
     _maybeAutoSaveObservabilityLog();
+  }
+
+  void _clearCapturedData({required double targetRefreshRate}) {
+    _aggregator.clear();
+    _observabilityLog.clear();
+    _bufferEpoch++;
+    _hasAutoSavedCurrentBuffer = false;
+    _lastFrameLogSaveError = null;
+    _snapshot =
+        FrameMetricsSnapshot.empty(targetRefreshRate: targetRefreshRate);
   }
 
   void _maybeAutoSaveObservabilityLog() {
