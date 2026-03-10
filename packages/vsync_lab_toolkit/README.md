@@ -39,13 +39,43 @@ Core aggregation and observability logic operate on plain sample data so they ca
 
 ## Install
 
-Use it as a path dependency inside the workspace or as a git dependency from another app.
+Use `path` only for local workspace development.
 
 ```yaml
 dependencies:
   vsync_lab_toolkit:
     path: ../vsync_lab/packages/vsync_lab_toolkit
 ```
+
+For external apps, prefer git tags instead of `ref`-based branch pinning.
+Recommended tag naming convention:
+
+- `vsync_lab_toolkit-v0.1.0`
+- `vsync_lab_toolkit-v0.1.1`
+- `vsync_lab_toolkit-v0.2.0`
+
+Recommended git dependency form:
+
+```yaml
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  vsync_lab_toolkit:
+    git:
+      url: https://github.com/zyyziyunying/vsync_lab.git
+      path: packages/vsync_lab_toolkit
+      tag_pattern: vsync_lab_toolkit-v
+    version: ^0.1.0
+```
+
+If the git remote points to a workspace repo whose root contains `vsync_lab/`, then use `path: vsync_lab/packages/vsync_lab_toolkit`.
+
+This requires Dart `>=3.9.0` in the consuming app and matching git tags in the source repo. Branch-based `ref` examples are intentionally not documented here, because external consumers should depend on released tags instead of moving branches.
+
+This repository still needs to publish package tags before the git example above becomes usable as-is. Until then, keep using the local `path` form for workspace integration.
+
+Release and tag workflow: see `docs/package_tag_release.md` in the repository root.
 
 ## Minimal integration
 

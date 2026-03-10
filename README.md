@@ -59,7 +59,23 @@ Panel export actions:
 
 The reusable monitor/exporter core now lives in `packages/vsync_lab_toolkit`.
 
-Add it to another Flutter app as a path or git dependency, for example:
+Current status:
+
+- usable from other Flutter apps today through workspace path or git dependency
+- not prepared for `pub.dev` publication yet
+- intended for Flutter runtime integration, with Android-focused workflow today
+
+Stable public API:
+
+- `FrameTimingMonitor`
+- `FrameMetricsSnapshot`
+- `FrameLogExporter`
+- `FrameLogFileExporter`
+- `FrameLogSaveResult`
+
+Do not depend on `lib/src/*` from external apps; those types are still internal implementation details.
+
+Use `path` only for local workspace development:
 
 ```yaml
 dependencies:
@@ -67,21 +83,76 @@ dependencies:
     path: ../vsync_lab/packages/vsync_lab_toolkit
 ```
 
+For external apps, prefer git tags instead of `ref`-based branch pinning.
+Recommended tag naming convention:
+
+- `vsync_lab_toolkit-v0.1.0`
+- `vsync_lab_toolkit-v0.1.1`
+- `vsync_lab_toolkit-v0.2.0`
+
+Recommended git dependency form:
+
+```yaml
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  vsync_lab_toolkit:
+    git:
+      url: https://github.com/zyyziyunying/vsync_lab.git
+      path: packages/vsync_lab_toolkit
+      tag_pattern: vsync_lab_toolkit-v
+    version: ^0.1.0
+```
+
+If the git remote points to a workspace repo whose root contains `vsync_lab/`, then use `path: vsync_lab/packages/vsync_lab_toolkit`.
+
+This requires Dart `>=3.9.0` in the consuming app and matching git tags in the source repo. Branch-based `ref` examples are intentionally not documented here, because external consumers should depend on released tags instead of moving branches.
+
+At the moment this repo still needs to publish package tags before the git example above becomes usable as-is. Until then, keep using the local `path` form for workspace integration.
+
+Release and tag workflow: see `docs/package_tag_release.md`.
+
 Minimal integration:
 
 ```dart
-final monitor = FrameTimingMonitor(
-  targetRefreshRate: 60,
-  scenario: 'home_feed',
-  scenarioSettingsBuilder: () => <String, Object?>{
-    'tab': 'for_you',
-  },
-);
+import 'package:vsync_lab_toolkit/vsync_lab_toolkit.dart';
 
-monitor.start();
+late final FrameTimingMonitor monitor;
+
+@override
+void initState() {
+  super.initState();
+  monitor = FrameTimingMonitor(
+    targetRefreshRate: 60,
+    scenario: 'home_feed',
+    scenarioSettingsBuilder: () => <String, Object?>{
+      'tab': 'for_you',
+    },
+  )..start();
+}
+
+@override
+void dispose() {
+  monitor
+    ..stop()
+    ..dispose();
+  super.dispose();
+}
 ```
 
 Default behavior: when the frame-log ring buffer reaches capacity, `FrameTimingMonitor` automatically saves one frame log snapshot to the app cache. Manual saves still work through `saveObservabilityLog()`.
+
+Manual save example:
+
+```dart
+final result = await monitor.saveObservabilityLog();
+debugPrint(result.latestAbsolutePath);
+```
+
+Repo-specific follow-up actions such as `adb exec-out run-as ...`, copying into `artifacts/`, or invoking analysis scripts are intentionally left to the host app or its scripts. Use `result.scenario`, `result.latestFileName`, and `result.latestAbsolutePath` to build those commands outside the package.
+
+For a complete minimal app, see `packages/vsync_lab_toolkit/example/`.
 
 ## Data collection scripts
 

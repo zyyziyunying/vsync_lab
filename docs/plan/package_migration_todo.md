@@ -128,9 +128,32 @@
 
 ### 3.3 评估二次拆包
 
-- [ ] 评估是否拆分为 `vsync_lab_core` 与 `vsync_lab_flutter`
-- [ ] 若拆分，定义纯 Dart 层与 Flutter 集成层的职责边界
-- [ ] 评估迁移成本、收益与兼容策略
+- [x] 评估是否拆分为 `vsync_lab_core` 与 `vsync_lab_flutter`
+- [x] 若拆分，定义纯 Dart 层与 Flutter 集成层的职责边界
+- [x] 评估迁移成本、收益与兼容策略
+
+当前结论（2026-03-10）：
+
+- 继续单包：当前不进入 `vsync_lab_core` + `vsync_lab_flutter` 双层拆分
+- 当前收益不足以覆盖迁移成本；`vsync_lab_toolkit` 只有一个主消费方，且尚未出现纯 Dart 独立复用场景
+- 当前包内已形成清晰职责边界，后续若出现 CLI、离线分析器、服务端日志处理等纯 Dart 消费方，再启动二次拆包
+
+建议保留的逻辑边界：
+
+- 纯 Dart 层候选职责：参数校验、frame budget / expected interval 计算、`FrameMetricsAggregator`、`FrameMetricsSnapshot`、`FrameObservabilityLog`、`FrameIntervalRecord`、统一日志 schema 与 JSON-safe 归一化
+- Flutter 集成层职责：`FrameTiming` 到纯数据 sample 的适配、`WidgetsBinding.addTimingsCallback` 订阅管理、`ChangeNotifier` 生命周期、默认文件导出器以及 `path_provider` 相关落盘能力
+
+本次评估的成本 / 收益判断：
+
+- 成本：需要新建两个 package、重做 public API 设计、迁移与分层测试、处理 example 和文档拆分、补兼容导出或迁移说明
+- 收益：可把纯计算层做成真正无 Flutter 依赖的复用单元，便于未来接入 CLI、桌面工具或离线分析流程
+- 判断：现阶段收益成立条件还不充分，因此先维持单包、内部分层
+
+兼容策略：
+
+- 短期：继续以 `vsync_lab_toolkit` 作为唯一对外入口，不新增破坏性迁移
+- 中期：若未来启动双层拆分，先在 `vsync_lab_toolkit` 中保留 facade 导出，逐步把纯 Dart 类型迁到 core，再由 flutter 层组合暴露
+- 长期：仅在出现明确的第二消费场景且 API 边界稳定后，再考虑正式发布 `core` / `flutter` 双包结构
 
 验收标准：
 
