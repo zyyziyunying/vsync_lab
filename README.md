@@ -73,7 +73,7 @@ Minimal integration:
 final monitor = FrameTimingMonitor(
   targetRefreshRate: 60,
   scenario: 'home_feed',
-  scenarioSettingsBuilder: () => {
+  scenarioSettingsBuilder: () => <String, Object?>{
     'tab': 'for_you',
   },
 );

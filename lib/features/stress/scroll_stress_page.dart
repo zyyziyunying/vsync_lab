@@ -35,7 +35,7 @@ class _ScrollStressPageState extends State<ScrollStressPage> {
     _monitor = FrameTimingMonitor(
       targetRefreshRate: 60,
       scenario: 'scroll',
-      scenarioSettingsBuilder: () => <String, dynamic>{
+      scenarioSettingsBuilder: () => <String, Object?>{
         'itemCount': _itemCount.round(),
         'autoScroll': _autoScroll,
         'enableBlur': _enableBlur,

@@ -84,6 +84,58 @@ void main() {
     expect(monitor.lastFrameLogSaveResult?.scenario, 'scroll');
   });
 
+  test('resets saving state when manual log build fails validation', () async {
+    Object? callbackError;
+    StackTrace? callbackStackTrace;
+    final monitor = FrameTimingMonitor(
+      scenarioSettingsBuilder: () => <String, Object?>{
+        'capturedAt': DateTime.parse('2026-03-10T12:00:00Z'),
+      },
+      onFrameLogSaveError: (error, stackTrace) {
+        callbackError = error;
+        callbackStackTrace = stackTrace;
+      },
+    );
+
+    await expectLater(monitor.saveObservabilityLog(), throwsArgumentError);
+
+    expect(monitor.isSavingObservabilityLog, isFalse);
+    expect(monitor.lastFrameLogSaveError, isA<ArgumentError>());
+    expect(callbackError, isA<ArgumentError>());
+    expect(callbackStackTrace, isNotNull);
+  });
+
+  test('auto-save reports validation failures without leaving pending state',
+      () async {
+    Object? callbackError;
+    final exporter = _FakeFrameLogExporter(resultScenario: 'animation');
+    final monitor = FrameTimingMonitor(
+      targetRefreshRate: 60,
+      maxLogRecords: 1,
+      exporter: exporter,
+      scenarioSettingsBuilder: () => <String, Object?>{
+        'capturedAt': DateTime.parse('2026-03-10T12:00:00Z'),
+      },
+      onFrameLogSaveError: (error, _) {
+        callbackError = error;
+      },
+    );
+
+    monitor.addSample(
+      frameEndUs: 1000000,
+      buildUs: 3000,
+      rasterUs: 2000,
+      totalUs: 7000,
+    );
+    await Future<void>.delayed(Duration.zero);
+
+    expect(exporter.savedLogs, isEmpty);
+    expect(monitor.isSavingObservabilityLog, isFalse);
+    expect(monitor.hasAutoSavedCurrentBuffer, isFalse);
+    expect(monitor.lastFrameLogSaveError, isA<ArgumentError>());
+    expect(callbackError, isA<ArgumentError>());
+  });
+
   test('rejects invalid constructor parameters and refresh rate updates', () {
     expect(() => FrameTimingMonitor(targetRefreshRate: 0), throwsArgumentError);
     expect(() => FrameTimingMonitor(maxSamples: 0), throwsArgumentError);
@@ -101,10 +153,10 @@ class _FakeFrameLogExporter implements FrameLogExporter {
   _FakeFrameLogExporter({required this.resultScenario});
 
   final String resultScenario;
-  final List<Map<String, dynamic>> savedLogs = <Map<String, dynamic>>[];
+  final List<Map<String, Object?>> savedLogs = <Map<String, Object?>>[];
 
   @override
-  Future<FrameLogSaveResult> save(Map<String, dynamic> log) async {
+  Future<FrameLogSaveResult> save(Map<String, Object?> log) async {
     savedLogs.add(log);
     return FrameLogSaveResult(
       scenario: resultScenario,

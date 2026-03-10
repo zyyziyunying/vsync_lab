@@ -30,7 +30,7 @@ void main() {
       scenario: 'animation',
     );
     final records =
-        (data['records'] as List<dynamic>).cast<Map<String, dynamic>>();
+        (data['records'] as List<dynamic>).cast<Map<String, Object?>>();
 
     expect(records.length, 3);
 
@@ -71,7 +71,7 @@ void main() {
       snapshot: FrameMetricsSnapshot.empty(targetRefreshRate: 60),
     );
     final records =
-        (data['records'] as List<dynamic>).cast<Map<String, dynamic>>();
+        (data['records'] as List<dynamic>).cast<Map<String, Object?>>();
 
     expect(data['recordCount'], 2);
     expect(log.isFull, isTrue);
@@ -99,11 +99,79 @@ void main() {
       snapshot: FrameMetricsSnapshot.empty(targetRefreshRate: 60),
     );
     final records =
-        (data['records'] as List<dynamic>).cast<Map<String, dynamic>>();
+        (data['records'] as List<dynamic>).cast<Map<String, Object?>>();
 
     expect(log.recordCount, 1);
     expect(log.isFull, isTrue);
     expect(records.single['frameIndex'], 2);
+  });
+
+  test('builds a typed document with stable envelope fields', () {
+    final log = FrameObservabilityLog(targetRefreshRate: 60, maxRecords: 3);
+
+    log.addSample(
+      frameEndUs: 1000000,
+      buildUs: 2500,
+      rasterUs: 2100,
+      totalUs: 5200,
+    );
+
+    final document = log.buildDocument(
+      snapshot: FrameMetricsSnapshot.empty(targetRefreshRate: 60),
+      scenario: ' animation ',
+    );
+    final data = document.toJson();
+
+    expect(
+      document.schemaVersion,
+      FrameObservabilityLogDocument.currentSchemaVersion,
+    );
+    expect(document.logType, FrameObservabilityLogDocument.currentLogType);
+    expect(document.scenario, 'animation');
+    expect(document.recordCount, 1);
+    expect(data['schemaVersion'], 1);
+    expect(data['logType'], 'vsync_lab.frame_observability');
+    expect(data['recordCount'], 1);
+    expect(data.containsKey('scenarioSettings'), isFalse);
+  });
+
+  test('normalizes scenario settings into JSON-safe immutable data', () {
+    final log = FrameObservabilityLog(targetRefreshRate: 60, maxRecords: 3);
+    final nestedList = <Object?>[
+      true,
+      <String, Object?>{'mode': 'burst'},
+    ];
+    final scenarioSettings = <String, Object?>{
+      'flags': nestedList,
+    };
+
+    final document = log.buildDocument(
+      snapshot: FrameMetricsSnapshot.empty(targetRefreshRate: 60),
+      scenarioSettings: scenarioSettings,
+    );
+    nestedList[1] = <String, Object?>{'mode': 'mutated'};
+
+    final data = document.toJson();
+    final savedSettings = data['scenarioSettings'] as Map<String, Object?>;
+    final savedFlags = savedSettings['flags'] as List<Object?>;
+    final savedMode = savedFlags[1] as Map<String, Object?>;
+
+    expect(savedMode['mode'], 'burst');
+    expect(() => savedFlags.add(false), throwsUnsupportedError);
+  });
+
+  test('rejects non-json-compatible scenario settings values', () {
+    final log = FrameObservabilityLog(targetRefreshRate: 60, maxRecords: 3);
+
+    expect(
+      () => log.buildDocument(
+        snapshot: FrameMetricsSnapshot.empty(targetRefreshRate: 60),
+        scenarioSettings: <String, Object?>{
+          'capturedAt': DateTime.parse('2026-03-10T12:00:00Z'),
+        },
+      ),
+      throwsArgumentError,
+    );
   });
 
   test('rejects invalid refresh rates and record capacities', () {

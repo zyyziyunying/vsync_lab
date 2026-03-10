@@ -18,7 +18,7 @@ class FrameTimingMonitor extends ChangeNotifier {
     int maxLogRecords = 1200,
     String scenario = 'unknown',
     FrameLogExporter exporter = const FrameLogFileExporter(),
-    Map<String, dynamic> Function()? scenarioSettingsBuilder,
+    Map<String, Object?> Function()? scenarioSettingsBuilder,
     bool autoSaveOnBufferFull = true,
     ValueChanged<FrameLogSaveResult>? onFrameLogSaved,
     void Function(Object error, StackTrace stackTrace)? onFrameLogSaveError,
@@ -43,7 +43,7 @@ class FrameTimingMonitor extends ChangeNotifier {
     required int maxLogRecords,
     required this.scenario,
     required FrameLogExporter exporter,
-    required Map<String, dynamic> Function()? scenarioSettingsBuilder,
+    required Map<String, Object?> Function()? scenarioSettingsBuilder,
     required this.autoSaveOnBufferFull,
     required ValueChanged<FrameLogSaveResult>? onFrameLogSaved,
     required void Function(Object error, StackTrace stackTrace)?
@@ -66,7 +66,7 @@ class FrameTimingMonitor extends ChangeNotifier {
   final FrameMetricsAggregator _aggregator;
   final FrameObservabilityLog _observabilityLog;
   final FrameLogExporter _exporter;
-  final Map<String, dynamic> Function()? _scenarioSettingsBuilder;
+  final Map<String, Object?> Function()? _scenarioSettingsBuilder;
   final ValueChanged<FrameLogSaveResult>? _onFrameLogSaved;
   final void Function(Object error, StackTrace stackTrace)?
       _onFrameLogSaveError;
@@ -131,9 +131,9 @@ class FrameTimingMonitor extends ChangeNotifier {
     notifyListeners();
   }
 
-  Map<String, dynamic> buildObservabilityLog({
+  Map<String, Object?> buildObservabilityLog({
     String? scenario,
-    Map<String, dynamic>? scenarioSettings,
+    Map<String, Object?>? scenarioSettings,
   }) {
     return _observabilityLog.buildUnifiedLog(
       snapshot: _snapshot,
@@ -144,7 +144,7 @@ class FrameTimingMonitor extends ChangeNotifier {
 
   Future<FrameLogSaveResult> saveObservabilityLog({
     String? scenario,
-    Map<String, dynamic>? scenarioSettings,
+    Map<String, Object?>? scenarioSettings,
   }) {
     return _saveObservabilityLog(
       scenario: scenario,
@@ -155,7 +155,7 @@ class FrameTimingMonitor extends ChangeNotifier {
 
   Future<FrameLogSaveResult> _saveObservabilityLog({
     String? scenario,
-    Map<String, dynamic>? scenarioSettings,
+    Map<String, Object?>? scenarioSettings,
     required bool markAutoSaved,
   }) {
     final pendingSave = _pendingSave;
@@ -167,14 +167,14 @@ class FrameTimingMonitor extends ChangeNotifier {
     _lastFrameLogSaveError = null;
     notifyListeners();
 
-    final saveFuture = _exporter
-        .save(
-      buildObservabilityLog(
-        scenario: scenario,
-        scenarioSettings: scenarioSettings,
-      ),
-    )
-        .then((result) {
+    final saveFuture = Future<FrameLogSaveResult>.sync(() {
+      return _exporter.save(
+        buildObservabilityLog(
+          scenario: scenario,
+          scenarioSettings: scenarioSettings,
+        ),
+      );
+    }).then((result) {
       _lastFrameLogSaveResult = result;
       if (markAutoSaved) {
         _hasAutoSavedCurrentBuffer = true;
@@ -254,7 +254,9 @@ class FrameTimingMonitor extends ChangeNotifier {
     }
 
     unawaited(
-      _saveObservabilityLog(markAutoSaved: true),
+      _saveObservabilityLog(
+        markAutoSaved: true,
+      ).then<void>((_) {}, onError: (Object error, StackTrace stackTrace) {}),
     );
   }
 

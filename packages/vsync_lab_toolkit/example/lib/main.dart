@@ -42,7 +42,7 @@ class _ToolkitExampleHomePageState extends State<ToolkitExampleHomePage>
     _monitor = FrameTimingMonitor(
       targetRefreshRate: 60,
       scenario: 'toolkit_example',
-      scenarioSettingsBuilder: () => <String, dynamic>{
+      scenarioSettingsBuilder: () => <String, Object?>{
         'screen': 'example',
         'animationActive': _animationController.isAnimating,
       },

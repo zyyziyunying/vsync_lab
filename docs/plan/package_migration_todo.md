@@ -117,9 +117,9 @@
 
 ### 3.2 为日志模型增加类型约束
 
-- [ ] 评估是否引入显式 log model 替代部分 `Map<String, dynamic>`
-- [ ] 识别稳定字段、可选字段与 schema version 责任边界
-- [ ] 为序列化结果补充结构测试
+- [x] 评估是否引入显式 log model 替代部分 `Map<String, dynamic>`（结论：不直接复用 `packages/common/lib/src/log`；该模块面向运行时事件日志管线，仍以 `fields` 承载弱类型扩展字段，且引入 `common` 会削弱 `vsync_lab_toolkit` 的独立复用边界）
+- [x] 识别稳定字段、可选字段与 schema version 责任边界（toolkit 固定维护 `schemaVersion`、`logType` 与统一 envelope 稳定字段；`scenarioSettings` 保持可选并限定为 host 提供的 JSON-compatible 扩展字段）
+- [x] 为序列化结果补充结构测试（覆盖 envelope stable fields、`scenarioSettings` 可选性与 JSON-compatible 约束）
 
 验收标准：
 

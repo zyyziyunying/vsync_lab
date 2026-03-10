@@ -29,7 +29,7 @@ class _AnimationStressPageState extends State<AnimationStressPage> {
     _monitor = FrameTimingMonitor(
       targetRefreshRate: 60,
       scenario: 'animation',
-      scenarioSettingsBuilder: () => <String, dynamic>{
+      scenarioSettingsBuilder: () => <String, Object?>{
         'particleCount': _particleCount.round(),
         'workloadLevel': _workloadLevel.round(),
         'colorShift': _colorShift,

@@ -55,7 +55,7 @@ import 'package:vsync_lab_toolkit/vsync_lab_toolkit.dart';
 final monitor = FrameTimingMonitor(
   targetRefreshRate: 60,
   scenario: 'home_feed',
-  scenarioSettingsBuilder: () => <String, dynamic>{
+  scenarioSettingsBuilder: () => <String, Object?>{
     'entry': 'feed_tab',
   },
 );
@@ -78,6 +78,8 @@ to build those commands outside the package.
 Default behavior: when the frame-log ring buffer reaches capacity, `FrameTimingMonitor` auto-saves the current log once per filled buffer. Calling `reset()` clears the buffer and re-arms auto-save.
 
 `targetRefreshRate`, `maxSamples`, and `maxLogRecords` must all be greater than `0`. Invalid values throw `ArgumentError` so edge-case behavior stays explicit.
+
+The unified frame-log envelope keeps `schemaVersion`, `logType`, `generatedAt`, `targetRefreshRateHz`, `frameBudgetMs`, `recordCount`, `maxRecords`, `scenario`, `snapshot`, and `records` as toolkit-owned stable fields. `scenarioSettings` remains optional and host-defined, but it must contain only JSON-compatible values.
 
 ## Example
 

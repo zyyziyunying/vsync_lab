@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 
 abstract interface class FrameLogExporter {
-  Future<FrameLogSaveResult> save(Map<String, dynamic> log);
+  Future<FrameLogSaveResult> save(Map<String, Object?> log);
 }
 
 class FrameLogSaveResult {
@@ -30,7 +30,7 @@ class FrameLogFileExporter implements FrameLogExporter {
   const FrameLogFileExporter();
 
   @override
-  Future<FrameLogSaveResult> save(Map<String, dynamic> log) async {
+  Future<FrameLogSaveResult> save(Map<String, Object?> log) async {
     final scenario = _sanitizeScenario(log['scenario'] as String?);
     final now = DateTime.now();
     final timestamp = _buildTimestamp(now);

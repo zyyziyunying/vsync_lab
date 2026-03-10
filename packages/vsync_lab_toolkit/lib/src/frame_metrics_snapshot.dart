@@ -52,8 +52,8 @@ class FrameMetricsSnapshot {
   final double averageRasterThreadMs;
   final double frameBudgetMs;
 
-  Map<String, dynamic> toJson() {
-    return <String, dynamic>{
+  Map<String, Object?> toJson() {
+    return <String, Object?>{
       'generatedAt': generatedAt.toIso8601String(),
       'targetRefreshRate': targetRefreshRate,
       'sampleCount': sampleCount,
