@@ -176,7 +176,7 @@
 
 ### 第二阶段：做 API 去业务化
 
-建议项：
+建议项（按 2026-03-09 当日评估口径）：
 
 1. （已完成）将 `buildAdbPullCommand()` 移回主应用或 `scripts/`
 2. 为 `targetRefreshRate` 等关键参数增加 assert / 校验
@@ -184,6 +184,58 @@
 4. 收窄 `vsync_lab_toolkit.dart` 的公共导出面
 
 完成这一阶段后，子包会更像“通用监控工具包”，而不是“实验项目里抽出来的一块代码”。
+
+补充说明：第 2-4 项如果只写成一句 TODO，仍然不够形成稳定 package 的 contract。真正需要写清楚的是下面这些约束。
+
+### 第二阶段补充：第 182-184 行实际需要收口的 contract
+
+#### 1. 参数校验不是“写几个 assert”这么简单
+
+需要明确：
+
+- 校验应以 **运行时显式校验** 为准，而不是只依赖 debug 模式下才生效的 `assert`
+- 关键参数不应只包含 `targetRefreshRate`，还应覆盖 `maxSamples`、`maxLogRecords` 等会直接影响聚合与日志行为的输入
+- 构造期与运行期入口都要遵守同一套规则，例如初始化监控器与后续刷新率切换都应得到一致行为
+
+建议收口为统一语义：
+
+- `targetRefreshRate` 必须是有限数值且大于 `0`
+- `maxSamples`、`maxLogRecords` 必须大于 `0`
+- 非法输入统一抛出 `ArgumentError`，不要让调用方依赖隐式兜底或静默纠正
+
+这样做的意义不是“防御性编程”本身，而是让 package 在 release 环境里也保持可预期、可测试的失败语义。
+
+#### 2. `FrameMetricsSnapshot.empty()` 需要定义“空快照”的真实语义
+
+“返回合理的 `frameBudgetMs`” 还不够，文档必须说明空快照到底表达什么：
+
+- 即使 `sampleCount == 0`，`frameBudgetMs` 也应该继续由 `targetRefreshRate` 推导，而不是填 `0`
+- `averageFps`、`low1PercentFps`、`jankRatio`、线程耗时等字段在空快照中填 `0`，表示“尚无样本”，不表示“观测结果真的为 0”
+- 调用方若要区分“无数据”和“真实数值为 0”，应优先依据 `sampleCount`
+
+如果这层语义不写清楚，外部接入方很容易把初始化态误读成一次真实观测结果。
+
+#### 3. 收窄导出面本质上是在声明稳定公共 API
+
+这里不只是“少 export 一些文件”，而是要明确谁属于长期维护承诺，谁只是内部实现：
+
+- 建议稳定公共 API 仅包含：`FrameTimingMonitor`、`FrameMetricsSnapshot`、`FrameLogExporter`、`FrameLogFileExporter`、`FrameLogSaveResult`
+- `FrameMetricsAggregator`、`FrameObservabilityLog`、记录结构、参数校验 helper、`FrameTiming` 适配层等都应视为 `lib/src/` 内部实现
+- 包内测试可以继续直接覆盖内部实现，但仓库外消费方不应被鼓励依赖这些内部类型
+
+这一步真正降低的是后续 `semver` 负担；否则当前内部结构会被外部项目过早绑定。
+
+#### 4. 刷新率切换后的数据失效规则也应与这三项一起写明
+
+当 `targetRefreshRate` 变化时，旧样本与旧日志记录不再与新配置处于同一统计口径，因此：
+
+- 更新刷新率后应清空聚合窗口
+- 更新刷新率后应清空 observability log buffer
+- 新的 empty snapshot 应立即按新刷新率重建 `frameBudgetMs`
+
+这条规则虽然属于行为细节，但它直接决定了“参数校验 + empty snapshot + 导出边界”最终是否构成完整一致的 package contract。
+
+说明：按当前仓库后续实现回看，上述第 2-4 项已在代码中基本落地；本段补充的主要目的，是把当时没写清楚的约束语义补齐，而不是简单把 TODO 改成“已完成”。
 
 ## 一句话判断
 
