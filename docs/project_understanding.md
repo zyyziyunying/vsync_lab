@@ -13,6 +13,7 @@
 
 它不追求业务功能，而是专门用来：
 
+- 默认启动 `Frame Commit Diagnosis`，专项观察 release-only 视觉提交异常
 - 复现老设备上的 VSync 不稳定、掉帧和帧率抖动问题
 - 通过 `FrameTiming`、`gfxinfo`、Perfetto/atrace 建立可观测性
 - 把采样、聚合、导出逻辑沉淀成一个可复用的小工具包
@@ -25,52 +26,56 @@
 
 ```mermaid
 flowchart TD
-    A[lib/main.dart] --> B[lib/app.dart]
-    B --> C[lib/routes/app_routes.dart]
+    A[main.dart] --> B[bootstrap.dart]
+    B --> C[FrameDiagnosisApp]
+    D[main_legacy.dart] --> E[VsyncLabApp]
+    E --> F[app_routes.dart]
 
-    C --> D[HomePage]
-    C --> E[AnimationStressPage]
-    C --> F[ScrollStressPage]
+    F --> G[HomePage]
+    F --> H[AnimationStressPage]
+    F --> I[ScrollStressPage]
 
-    E --> G[AnimationStressScene]
-    F --> H[ScrollStressScene]
+    H --> J[AnimationStressScene]
+    I --> K[ScrollStressScene]
 
-    E --> I[FrameMetricsPanel]
-    F --> I
+    H --> L[FrameMetricsPanel]
+    I --> L
 
-    E --> J[FrameTimingMonitor]
-    F --> J
+    H --> M[FrameTimingMonitor]
+    I --> M
 
-    J --> K[FrameMetricsRecorder]
-    K --> L[FrameMetricsAggregator]
-    K --> M[FrameObservabilityLog]
-    J --> N[FrameLogFileExporter]
+    M --> N[FrameMetricsRecorder]
+    N --> O[FrameMetricsAggregator]
+    N --> P[FrameObservabilityLog]
+    M --> Q[FrameLogFileExporter]
 
-    N --> O[App Cache\nframe_log_*_latest.json\nframe_log_*_timestamp.json]
-    O --> P[scripts/pull_and_analyze_frame_log.ps1]
-    P --> Q[scripts/analyze_frame_log.ps1]
-    Q --> R[artifacts/]
+    Q --> R[App Cache\nframe_log_*_latest.json\nframe_log_*_timestamp.json]
+    R --> S[pull_and_analyze_frame_log.ps1]
+    S --> T[analyze_frame_log.ps1]
+    T --> U[artifacts/]
 
-    S[scripts/collect_gfxinfo.ps1] --> R
-    T[scripts/collect_perfetto.ps1] --> R
+    V[collect_gfxinfo.ps1] --> U
+    W[collect_perfetto.ps1] --> U
 ```
 
-### 2.1 `lib/` 是实验 App 壳层
+### 2.1 App 壳层
 
 这里主要负责“给你一个能稳定复现问题的场景”和“把指标显示出来”。
 
-- `lib/features/home/`
-  - 首页和实验入口
-- `lib/features/stress/`
-  - 两个压测场景：动画压测、滚动压测
-- `lib/widgets/frame_metrics_panel.dart`
-  - 实时展示监控结果
-- `lib/routes/`
-  - 简单路由组织
+- `frame_diagnosis/`
+  - 默认 diagnosis app 壳层与专项路由
+- `home/`
+  - legacy 压测首页
+- `stress/`
+  - 两个 legacy 压测场景：动画压测、滚动压测
+- `frame_metrics_panel.dart`
+  - legacy 实时监控面板
+- `app_routes.dart`
+  - legacy 压测路由组织
 
 应用层本身并不复杂，重点不是路由和 UI，而是把实验参数传给监控层。
 
-### 2.2 `packages/vsync_lab_toolkit/` 是核心能力层
+### 2.2 Toolkit 能力层
 
 这是仓库最值得读的部分。它把“采样、聚合、日志导出”从 App 里抽出来了。
 
@@ -91,7 +96,7 @@ flowchart TD
 - App 层负责“造场景”
 - Toolkit 层负责“测量和留证据”
 
-### 2.3 `scripts/` 是实验后处理层
+### 2.3 脚本后处理层
 
 这一层负责把设备上的实验数据拉到本地，并做初步统计分析。
 
@@ -156,7 +161,7 @@ sequenceDiagram
 
 ### 4.1 Animation stress
 
-页面文件：`lib/features/stress/animation_stress_page.dart`
+页面文件：`animation_stress_page.dart`。这个页面当前通过 `main_legacy.dart` 启动。
 
 它提供几个可调参数：
 
@@ -173,7 +178,7 @@ sequenceDiagram
 
 ### 4.2 Scroll stress
 
-页面文件：`lib/features/stress/scroll_stress_page.dart`
+页面文件：`scroll_stress_page.dart`。这个页面当前通过 `main_legacy.dart` 启动。
 
 它提供几个可调参数：
 
@@ -190,7 +195,7 @@ sequenceDiagram
 
 ## 5. 面板上的核心指标怎么理解
 
-这些指标都来自 `packages/vsync_lab_toolkit/lib/src/frame_metrics_aggregator.dart`。
+这些指标都来自 `frame_metrics_aggregator.dart`。
 
 ### 5.1 `Avg FPS`
 
@@ -302,7 +307,7 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    A[启动 app] --> B[进入 Animation 或 Scroll 页面]
+    A[启动 legacy stress app] --> B[进入 Animation 或 Scroll 页面]
     B --> C[预热 15-30 秒]
     C --> D[观察实时指标]
     D --> E[点击 Save frame log]
@@ -311,7 +316,7 @@ flowchart TD
     G --> H[补充收集 gfxinfo]
     H --> I[补充收集 Perfetto 或 atrace]
     I --> J[把本轮证据归档到 artifacts/]
-    J --> K[回填 docs/experiment_log_template.md]
+    J --> K[回填 experiment_log_template.md]
 ```
 
 这条流程体现了这个仓库的实验思想：
@@ -327,15 +332,15 @@ flowchart TD
 
 如果你后面要继续读源码，建议按这个顺序：
 
-1. `lib/features/stress/animation_stress_page.dart`
-2. `lib/features/stress/scroll_stress_page.dart`
-3. `lib/widgets/frame_metrics_panel.dart`
-4. `packages/vsync_lab_toolkit/lib/src/frame_timing_monitor.dart`
-5. `packages/vsync_lab_toolkit/lib/src/frame_metrics_recorder.dart`
-6. `packages/vsync_lab_toolkit/lib/src/frame_metrics_aggregator.dart`
-7. `packages/vsync_lab_toolkit/lib/src/frame_observability_log.dart`
-8. `scripts/pull_and_analyze_frame_log.ps1`
-9. `scripts/analyze_frame_log.ps1`
+1. `animation_stress_page.dart`
+2. `scroll_stress_page.dart`
+3. `frame_metrics_panel.dart`
+4. `frame_timing_monitor.dart`
+5. `frame_metrics_recorder.dart`
+6. `frame_metrics_aggregator.dart`
+7. `frame_observability_log.dart`
+8. `pull_and_analyze_frame_log.ps1`
+9. `analyze_frame_log.ps1`
 
 前 3 个文件回答“页面怎么用监控能力”，后 6 个文件回答“监控能力到底怎么工作”。
 

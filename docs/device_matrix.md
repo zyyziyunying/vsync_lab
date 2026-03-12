@@ -5,7 +5,7 @@
 - Physical Android devices only.
 - Current experiment baseline: Android 10 / API 29.
 - One row should represent one stable hardware + software combination. If the system image, refresh-rate mode, or thermal policy changes, add a new row instead of overwriting the old one.
-- Prefer recording the refresh-rate and display details from `artifacts/gfxinfo/device_*.txt`, because `scripts/collect_gfxinfo.ps1` already captures `getprop ro.product.model` and `dumpsys display`.
+- Prefer recording the refresh-rate and display details from `device_*.txt` under `artifacts/gfxinfo/`, because `collect_gfxinfo.ps1` already captures `getprop ro.product.model` and `dumpsys display`.
 
 ## 2. Priority coverage
 
@@ -36,4 +36,4 @@ When a real device is added, fill at least these columns or append them to the n
 
 ## 4. Update rule
 
-Before writing a new experiment result, make sure the device used by that run exists in this file. If not, add it first and then reference its `device_alias` from [experiment_log_template.md](./experiment_log_template.md).
+Before writing a new experiment result, make sure the device used by that run exists in this file. If not, add it first and then reference its `device_alias` from [experiment_log_template.md](experiment_log_template.md).

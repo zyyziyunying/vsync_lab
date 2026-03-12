@@ -2,7 +2,7 @@
 
 Use one copy of this template for each experiment run. Keep raw captures in `artifacts/`, and only check them into git when the change specifically requires evidence in the repo.
 
-Before filling this template, make sure the device already exists in [device_matrix.md](./device_matrix.md) and use the same `device_alias`.
+Before filling this template, make sure the device already exists in [device_matrix.md](device_matrix.md) and use the same `device_alias`.
 
 ## 1. Copyable template
 
@@ -21,7 +21,8 @@ Before filling this template, make sure the device already exists in [device_mat
 - commit:
 - device_alias:
 - package_name: `com.harrypet.vsync_lab`
-- scenario: `animation` / `scroll`
+- app_target: `diagnosis_default` / `legacy_stress`
+- scenario: `state_commit` / `route_commit` / `animation` / `scroll`
 - target_refresh_rate_hz:
 - warmup_seconds:
 - capture_seconds:
@@ -38,7 +39,7 @@ Before filling this template, make sure the device already exists in [device_mat
 
 ## Commands
 ```powershell
-flutter run -d <device_id>
+flutter run -t lib/main_legacy.dart -d <device_id>
 ./scripts/pull_and_analyze_frame_log.ps1 -Scenario <scenario>
 ./scripts/collect_gfxinfo.ps1 -PackageName com.harrypet.vsync_lab
 ./scripts/collect_perfetto.ps1 -TraceSeconds <seconds>
@@ -107,10 +108,11 @@ flutter run -d <device_id>
 
 ## 2. Minimal usage notes
 
+- Until diagnosis export lands, this template mainly covers the legacy frame-log workflow launched through `main_legacy.dart`.
 - The in-app button is `Save frame log`. It writes the latest observability log into the app cache; `pull_and_analyze_frame_log.ps1` then pulls and analyzes it.
-- `scripts/collect_gfxinfo.ps1` writes both device/display information and `framestats` output into `artifacts/gfxinfo/`.
-- `scripts/collect_perfetto.ps1` prefers Perfetto and automatically falls back to `atrace` on Android 10 devices that cannot produce a usable `.pftrace`.
-- `scripts/analyze_frame_log.ps1` already computes the fields listed in `Analyzer summary`, `Worst frames / streaks`, and chunk trends. Paste those values directly instead of re-deriving them by hand.
+- `collect_gfxinfo.ps1` writes both device/display information and `framestats` output into `artifacts/gfxinfo/`.
+- `collect_perfetto.ps1` prefers Perfetto and automatically falls back to `atrace` on Android 10 devices that cannot produce a usable `.pftrace`.
+- `analyze_frame_log.ps1` already computes the fields listed in `Analyzer summary`, `Worst frames / streaks`, and chunk trends. Paste those values directly instead of re-deriving them by hand.
 
 ## 3. When to update this file
 

@@ -128,15 +128,16 @@ EOF
 
 - 已在工作区根目录落地 `vsync_lab/`（Android only，最小可运行实验工程）。
 - `vsync_lab` 已初始化为独立 Git 仓库（后续可补远端并纳入 submodule 流程）。
+- 2026-03-12 起，默认 `flutter run -d <device_id>` 会直接进入 `Frame Commit Diagnosis`；legacy 压测页改由 `flutter run -t lib/main_legacy.dart -d <device_id>` 启动。
 - Phase 0 基线能力已就位：
   - 动画压测场景（可调粒子数/负载）
   - 滚动压测场景（可调列表规模/自动滚动/模糊）
   - `FrameTiming` 实时指标面板（FPS、1% low、jank、抖动、VSync miss）
 - 已补充采样脚本与模板：
-  - `scripts/collect_gfxinfo.ps1`
-  - `scripts/collect_perfetto.ps1`
-  - `docs/experiment_log_template.md`
-  - `docs/device_matrix.md`
+  - `collect_gfxinfo.ps1`
+  - `collect_perfetto.ps1`
+  - `experiment_log_template.md`
+  - `device_matrix.md`
 - Phase 1 可观测性能力已落地：
   - 新增统一日志导出（`schemaVersion: 1`，`logType: vsync_lab.frame_observability`）
   - 支持记录每帧关键字段：`frameEndUs`、`expectedIntervalUs`、`actualIntervalUs`、`intervalDeltaUs`、`intervalDeltaRatio`、`isVsyncMiss`
@@ -148,6 +149,6 @@ EOF
 
 ## 11. Phase 1 使用建议（最小流程）
 
-1. 进入 `Animation stress` 或 `Scroll stress`，运行 15~30 秒并完成预热。
+1. 先通过 `flutter run -t lib/main_legacy.dart -d <device_id>` 启动 legacy stress app，再进入 `Animation stress` 或 `Scroll stress`，运行 15~30 秒并完成预热。
 2. 点击 `Save frame log`，优先直接复制弹窗中的 `./scripts/pull_and_analyze_frame_log.ps1 -Scenario <scenario>` 并执行；只有在需要手动拉取时，才先用 `adb shell run-as com.harrypet.vsync_lab pwd` 获取应用数据目录，再拼接绝对路径 `<app_data_dir>/cache/frame_log_<scenario>_latest.json` 执行 `adb exec-out run-as ... cat ...`。
 3. 继续采集 `gfxinfo` 与 Perfetto，按同一轮实验归档到 `artifacts/`。

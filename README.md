@@ -1,6 +1,6 @@
 # VSync Lab
 
-Android-only Flutter lab used to reproduce and observe VSync instability and frame pacing issues on legacy devices (Phase 0 baseline).
+Android-only Flutter lab used to diagnose release-only frame delivery issues on legacy devices. The diagnosis workspace is now the default app shell, while the original stress lab remains available behind a legacy entry point.
 
 ## Scope
 
@@ -10,7 +10,7 @@ Android-only Flutter lab used to reproduce and observe VSync instability and fra
 
 ## Common package usage
 
-This app intentionally reuses workspace helpers from `packages/common`:
+This app intentionally reuses workspace helpers from the `common` package:
 
 - `RouterFactory`, `NavigatorManager`, and `go_router` re-export for fast route bootstrap
 - `CommonAdaptiveLayout` for compact vs expanded layout switching
@@ -28,6 +28,20 @@ cd vsync_lab
 flutter run -d <android_device_id>
 ```
 
+That command now boots `Frame Commit Diagnosis` by default. Use the legacy entry when you need the older stress scenes or frame-log export flow:
+
+```bash
+cd vsync_lab
+flutter run -t lib/main_legacy.dart -d <android_device_id>
+```
+
+For scripts or release automation that still want an explicit diagnosis target, `main_frame_diagnosis.dart` remains available:
+
+```bash
+cd vsync_lab
+flutter run --release -t lib/main_frame_diagnosis.dart -d <android_device_id>
+```
+
 Useful checks:
 
 ```bash
@@ -38,10 +52,21 @@ flutter test
 
 ## In-app scenarios
 
+Default diagnosis startup:
+
+1. `State Commit Scenario`: same-page A/B state surface for visual-commit diagnosis.
+2. `Route Commit Scenario`: real nested Route A -> Route B skeleton with a Route B logic ticker.
+
+Phase A note:
+
+- `Force scheduleFrame` and `Keep frames pumping` are visible as disabled Phase B controls until binding instrumentation lands.
+
+Legacy stress lab via `main_legacy.dart`:
+
 1. `Animation stress`: particle orbit animation with tunable CPU workload.
 2. `Scroll stress`: long list + optional blur + auto-scroll loop.
 
-Both scenarios display live metrics from `FrameTiming` callbacks:
+Both legacy scenarios display live metrics from `FrameTiming` callbacks:
 
 - average FPS
 - 1% low FPS
@@ -50,7 +75,7 @@ Both scenarios display live metrics from `FrameTiming` callbacks:
 - VSync miss count / max consecutive miss streak
 - UI and Raster average time
 
-Panel actions:
+Legacy panel actions:
 
 - `Start monitor` / `Pause monitor`: control `FrameTiming` sampling
 - `Reset metrics`: clear the current rolling window and counters
@@ -58,7 +83,7 @@ Panel actions:
 
 ## Reuse in other apps
 
-The reusable monitor/exporter core now lives in `packages/vsync_lab_toolkit`.
+The reusable monitor/exporter core now lives in the `vsync_lab_toolkit` package.
 
 Current status:
 
@@ -112,7 +137,7 @@ This requires Dart `>=3.9.0` in the consuming app and matching git tags in the s
 
 At the moment this repo still needs to publish package tags before the git example above becomes usable as-is. Until then, keep using the local `path` form for workspace integration.
 
-Release and tag workflow: see `docs/package_tag_release.md`.
+Release and tag workflow: see `package_tag_release.md`.
 
 Minimal integration:
 
@@ -153,14 +178,14 @@ debugPrint(result.latestAbsolutePath);
 
 Repo-specific follow-up actions such as `adb exec-out run-as ...`, copying into `artifacts/`, or invoking analysis scripts are intentionally left to the host app or its scripts. Use `result.scenario`, `result.latestFileName`, and `result.latestAbsolutePath` to build those commands outside the package.
 
-For a complete minimal app, see `packages/vsync_lab_toolkit/example/`.
+For a complete minimal app, see the `example/` app in the `vsync_lab_toolkit` package.
 
 ## Data collection scripts
 
-- `scripts/collect_gfxinfo.ps1`
-- `scripts/collect_perfetto.ps1`
-- `scripts/analyze_frame_log.ps1`
-- `scripts/pull_and_analyze_frame_log.ps1`
+- `collect_gfxinfo.ps1`
+- `collect_perfetto.ps1`
+- `analyze_frame_log.ps1`
+- `pull_and_analyze_frame_log.ps1`
 
 Example:
 
@@ -186,9 +211,9 @@ Artifacts are stored in `artifacts/`.
 
 ## Experiment docs
 
-- `docs/README.md`: project scope, phased goals, and Perfetto workflow
-- `docs/device_matrix.md`: device inventory and environment baseline
-- `docs/experiment_log_template.md`: per-run evidence template
+- the docs README (`README.md` under `docs`): project scope, phased goals, and Perfetto workflow
+- `device_matrix.md`: device inventory and environment baseline
+- `experiment_log_template.md`: per-run evidence template
 
 ## Independent repo / submodule note
 
